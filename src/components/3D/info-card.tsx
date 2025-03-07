@@ -16,19 +16,21 @@ export default function InfoCard({
         return "/customer";
       case "restaurant":
         return "/restaurant";
-      case "rides":
-        return "/rides";
+      case "ride":
+        return "/ride";
       case "store":
         return "/store";
+      case "staff":
+        return "/staff";
       default:
         return "/";
     }
   };
 
   return (
-    <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-white p-6 rounded-lg shadow-lg z-50">
-      <h2 className="text-xl font-bold">{info.name}</h2>
-      <p className="text-sm text-gray-600 my-2">{info.description}</p>
+    <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-background/80 backdrop-blur-sm p-6 rounded-lg shadow-lg z-50">
+      <h2 className="text-xl text-primary font-bold">{info.name}</h2>
+      <p className="text-sm text-primary my-2">{info.description}</p>
       <div className="flex justify-between mt-4">
         <Button
           variant="default"

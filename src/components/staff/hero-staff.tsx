@@ -1,4 +1,4 @@
-export function Hero() {
+export function HeroStaff() {
   return (
     <div className="relative py-16 md:py-24 overflow-hidden rounded-3xl bg-gradient-to-r from-purple-700 to-indigo-700">
       <div className="absolute inset-0 bg-[url('/placeholder.svg?height=800&width=1200')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
@@ -10,8 +10,7 @@ export function Hero() {
           </span>
         </h1>
         <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-8">
-          Experience the thrill of our world-class rides and savor delicious
-          cuisine at our premium restaurants.
+          Staff UI - Experience the best of VorteKia
         </p>
       </div>
     </div>

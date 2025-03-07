@@ -11,17 +11,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ShoppingCart } from "lucide-react";
-
-interface Menu {
-  menu_id: number;
-  restaurant_id: number;
-  name: string;
-  description: string;
-  price: number;
-  available_quantity: number;
-  image?: string;
-}
+import { ArrowLeft } from "lucide-react";
+import SkeletonLoading from "../loading/skeleton";
 
 export function MenuSection() {
   const navigate = useNavigate();
@@ -80,11 +71,12 @@ export function MenuSection() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center min-h-[300px]">
-            <div className="animate-pulse flex flex-col items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-muted"></div>
-              <div className="h-4 w-24 rounded bg-muted"></div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array(6)
+              .fill(0)
+              .map((_, index) => (
+                <SkeletonLoading key={index} />
+              ))}
           </div>
         ) : menus.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[300px] text-center p-8 border rounded-lg bg-muted/10">

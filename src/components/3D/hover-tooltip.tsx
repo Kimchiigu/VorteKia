@@ -16,8 +16,8 @@ export default function HoverTooltip({
         transform: "translate(-50%, -120%)",
       }}
     >
-      <Card className="bg-black/80 text-white shadow-lg">
-        <CardContent className="p-4">
+      <Card className="bg-background/80 backdrop-blur-sm text-primary shadow-lg">
+        <CardContent className="p-4 text-primary">
           <p className="text-lg font-semibold">{hovered.name}</p>
           <p className="text-sm">Click to zoom in (Press ESC to reset)</p>
         </CardContent>

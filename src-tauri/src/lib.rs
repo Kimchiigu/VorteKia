@@ -13,6 +13,8 @@ use controllers::menu_handler::{view_all_menus, create_menu, update_menu, delete
 use controllers::queue_handler::{view_all_queues, create_queue, delete_queue, get_queues_by_ride};
 use controllers::user_handler::{login_user, get_balance, top_up_balance, get_notifications};
 use controllers::notification_handler::{view_notification, mark_all_notifications_read};
+use controllers::store_handler::{view_all_stores, create_store, update_store, delete_store};
+use controllers::souvenir_handler::view_all_souvenirs;
 
 struct AppState {
     db: DatabaseConnection,
@@ -165,6 +167,11 @@ pub fn run() {
             get_notifications,
             view_notification,
             mark_all_notifications_read,
+            view_all_stores,
+            create_store,
+            update_store,
+            delete_store,
+            view_all_souvenirs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Search } from "lucide-react";
+import SkeletonLoading from "../loading/skeleton";
 
 interface Ride {
   ride_id: number;
@@ -58,35 +59,6 @@ export function RidesSection() {
     return matchesSearch;
   });
 
-  // Skeleton loader component
-  const RideSkeleton = () => (
-    <Card className="overflow-hidden">
-      <div className="aspect-video w-full bg-muted animate-pulse" />
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div className="h-6 w-32 bg-muted rounded animate-pulse" />
-          <div className="h-5 w-16 bg-muted rounded-full animate-pulse" />
-        </div>
-        <div className="h-4 w-full bg-muted rounded mt-2 animate-pulse" />
-        <div className="h-4 w-3/4 bg-muted rounded mt-1 animate-pulse" />
-      </CardHeader>
-      <CardContent>
-        <div className="flex justify-between items-center">
-          <div className="h-4 w-24 bg-muted rounded animate-pulse" />
-          <div className="h-4 w-28 bg-muted rounded animate-pulse" />
-        </div>
-      </CardContent>
-      <CardFooter>
-        <div className="w-full">
-          <div className="flex justify-between mb-1">
-            <div className="h-4 w-20 bg-muted rounded animate-pulse" />
-          </div>
-          <div className="h-2 w-full bg-muted rounded animate-pulse" />
-        </div>
-      </CardFooter>
-    </Card>
-  );
-
   return (
     <section id="rides" className="scroll-mt-16">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -119,7 +91,7 @@ export function RidesSection() {
           {Array(6)
             .fill(0)
             .map((_, index) => (
-              <RideSkeleton key={index} />
+              <SkeletonLoading key={index} />
             ))}
         </div>
       ) : (

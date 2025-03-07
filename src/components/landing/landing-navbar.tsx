@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ModeToggle } from "../mode-toggle";
 
 export default function LandingNavbar() {
   const [currentTime, setCurrentTime] = useState(
@@ -26,9 +27,12 @@ export default function LandingNavbar() {
   }, []);
 
   return (
-    <nav className="w-full h-14 bg-white/50 backdrop-blur-lg flex justify-between items-center px-6 text-gray-700 font-semibold fixed top-0 left-0">
+    <nav className="w-full h-14 bg-background/50 backdrop-blur-lg flex justify-between items-center px-6 text-primary font-semibold fixed top-0 left-0">
       <span>Welcome to VorteKia!</span>
-      <span>{currentTime}</span>
+      <div className="flex items-center gap-4">
+        <span>{currentTime}</span>
+        <ModeToggle />
+      </div>
     </nav>
   );
 }

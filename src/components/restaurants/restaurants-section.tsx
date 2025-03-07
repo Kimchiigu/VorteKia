@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
 import { useNavigate } from "react-router";
+import SkeletonLoading from "../loading/skeleton";
 
 interface Restaurant {
   restaurant_id: number;
@@ -76,30 +77,6 @@ export function RestaurantsSection() {
     return matchesSearch && matchesCuisine;
   });
 
-  // Skeleton loader component
-  const RestaurantSkeleton = () => (
-    <Card className="overflow-hidden">
-      <div className="aspect-video w-full bg-muted animate-pulse" />
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div className="h-6 w-32 bg-muted rounded animate-pulse" />
-          <div className="h-5 w-16 bg-muted rounded-full animate-pulse" />
-        </div>
-        <div className="h-4 w-full bg-muted rounded mt-2 animate-pulse" />
-        <div className="h-4 w-3/4 bg-muted rounded mt-1 animate-pulse" />
-      </CardHeader>
-      <CardContent>
-        <div className="flex justify-between items-center">
-          <div className="h-4 w-32 bg-muted rounded animate-pulse" />
-          <div className="h-4 w-24 bg-muted rounded animate-pulse" />
-        </div>
-      </CardContent>
-      <CardFooter>
-        <div className="h-9 w-full bg-muted rounded animate-pulse" />
-      </CardFooter>
-    </Card>
-  );
-
   return (
     <section id="restaurants" className="scroll-mt-16">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -148,7 +125,7 @@ export function RestaurantsSection() {
           {Array(6)
             .fill(0)
             .map((_, index) => (
-              <RestaurantSkeleton key={index} />
+              <SkeletonLoading key={index} />
             ))}
         </div>
       ) : (

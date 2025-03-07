@@ -16,7 +16,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Store::SalesAssociateID).string().not_null())
                     .col(ColumnDef::new(Store::Name).string().not_null())
                     .col(ColumnDef::new(Store::Image).binary().not_null())
-                    .col(ColumnDef::new(Store::Location).string().not_null())
+                    .col(ColumnDef::new(Store::Description).string().not_null())
                     .col(ColumnDef::new(Store::OperationalStatus).string().not_null())
                     .foreign_key(
                         ForeignKey::create()
@@ -39,7 +39,7 @@ impl MigrationTrait for Migration {
                 Query::insert()
                     .into_table(Store::Table)
                     .columns([
-                        Store::StoreID, Store::SalesAssociateID, Store::Name, Store::Image, Store::Location,
+                        Store::StoreID, Store::SalesAssociateID, Store::Name, Store::Image, Store::Description,
                         Store::OperationalStatus,
                     ])
                     .values_panic([ 
@@ -85,7 +85,7 @@ enum Store {
     SalesAssociateID,
     Name,
     Image,
-    Location,
+    Description,
     OperationalStatus,
 }
 
