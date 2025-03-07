@@ -1,0 +1,190 @@
+{
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 702,
+      "type": "VEC3",
+      "max": [
+        22.5,
+        5.8222990036010742,
+        22.500001907348633
+      ],
+      "min": [
+        -22.5,
+        0.0,
+        -22.500001907348633
+      ]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 702,
+      "type": "VEC3",
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "min": [
+        -1.0,
+        -0.0026131081394851208,
+        -1.0
+      ]
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 702,
+      "type": "VEC4",
+      "max": [
+        1.0,
+        0.38977846503257751,
+        0.0,
+        1.0
+      ],
+      "min": [
+        0.087665639817714691,
+        -0.62446212768554688,
+        -0.96689289808273315,
+        1.0
+      ]
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 702,
+      "type": "VEC2",
+      "max": [
+        0.34118473529815674,
+        0.1977347731590271
+      ],
+      "min": [
+        0.28913038969039917,
+        0.1456904411315918
+      ]
+    },
+    {
+      "bufferView": 4,
+      "componentType": 5123,
+      "count": 951,
+      "type": "SCALAR",
+      "max": [
+        701.0
+      ],
+      "min": [
+        0.0
+      ]
+    }
+  ],
+  "asset": {
+    "version": "2.0"
+  },
+  "buffers": [
+    {
+      "uri": "WaterJapan.bin",
+      "byteLength": 35598
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 8424
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 8424,
+      "byteLength": 8424
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 16848,
+      "byteLength": 11232
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 28080,
+      "byteLength": 5616
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 33696,
+      "byteLength": 1902
+    }
+  ],
+  "images": [
+    {
+      "uri": "texture%20main.png",
+      "name": "texture main"
+    }
+  ],
+  "materials": [
+    {
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicFactor": 0.0
+      },
+      "name": "mat main"
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TANGENT": 2,
+            "TEXCOORD_0": 3
+          },
+          "indices": 4,
+          "material": 0
+        }
+      ],
+      "name": "WaterJapan"
+    }
+  ],
+  "nodes": [
+    {
+      "mesh": 0,
+      "rotation": [
+        0.0,
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "scale": [
+        5.0,
+        1.0,
+        5.0
+      ],
+      "translation": [
+        79.0,
+        0.0,
+        -13.5
+      ],
+      "name": "WaterJapan"
+    }
+  ],
+  "samplers": [
+    {}
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [
+        0
+      ],
+      "name": "WaterJapan"
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0,
+      "name": "texture main"
+    }
+  ]
+}

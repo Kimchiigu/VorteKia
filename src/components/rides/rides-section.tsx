@@ -1,0 +1,188 @@
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Search } from "lucide-react";
+
+interface Ride {
+  ride_id: number;
+  name: string;
+  description: string;
+  status: string;
+  location: string;
+  capacity: number;
+  queue_count: number;
+  image?: string;
+}
+
+export function RidesSection() {
+  const [rides, setRides] = useState<Ride[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchRides() {
+      try {
+        setLoading(true);
+        console.log("Fetching rides...");
+        const response = await invoke<{ data: Ride[] }>("view_all_rides");
+
+        if (response && response.data) {
+          setRides(response.data);
+        } else {
+          console.error("Invalid response format:", response);
+        }
+      } catch (error) {
+        console.error("Failed to fetch rides:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRides();
+  }, []);
+
+  const filteredRides = rides.filter((ride) => {
+    const matchesSearch =
+      ride.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ride.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesSearch;
+  });
+
+  // Skeleton loader component
+  const RideSkeleton = () => (
+    <Card className="overflow-hidden">
+      <div className="aspect-video w-full bg-muted animate-pulse" />
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+          <div className="h-5 w-16 bg-muted rounded-full animate-pulse" />
+        </div>
+        <div className="h-4 w-full bg-muted rounded mt-2 animate-pulse" />
+        <div className="h-4 w-3/4 bg-muted rounded mt-1 animate-pulse" />
+      </CardHeader>
+      <CardContent>
+        <div className="flex justify-between items-center">
+          <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-28 bg-muted rounded animate-pulse" />
+        </div>
+      </CardContent>
+      <CardFooter>
+        <div className="w-full">
+          <div className="flex justify-between mb-1">
+            <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+          </div>
+          <div className="h-2 w-full bg-muted rounded animate-pulse" />
+        </div>
+      </CardFooter>
+    </Card>
+  );
+
+  return (
+    <section id="rides" className="scroll-mt-16">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Rides & Attractions
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            Discover thrilling rides and attractions throughout VorteKia
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search rides..."
+              className="pl-8 w-full sm:w-[200px] md:w-[250px]"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array(6)
+            .fill(0)
+            .map((_, index) => (
+              <RideSkeleton key={index} />
+            ))}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredRides.map((ride) => (
+              <Card key={ride.ride_id} className="overflow-hidden">
+                <div className="aspect-video w-full overflow-hidden">
+                  <img
+                    src={
+                      ride.image
+                        ? `data:image/png;base64,${ride.image}`
+                        : "/placeholder.svg?height=200&width=400"
+                    }
+                    alt={ride.name}
+                    className="h-full w-full object-cover transition-transform hover:scale-105"
+                  />
+                </div>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <CardTitle>{ride.name}</CardTitle>
+                    <Badge variant="outline">{ride.status}</Badge>
+                  </div>
+                  <CardDescription>{ride.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm">
+                      <span className="font-medium">
+                        Location: {ride.location}
+                      </span>
+                    </div>
+                    {/* <div className="text-sm">
+                      Capacity: {ride.capacity} people
+                    </div> */}
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <div className="w-full">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>
+                        Queue: {ride.queue_count}/{ride.capacity}
+                      </span>
+                    </div>
+                    <Progress
+                      value={(ride.queue_count / ride.capacity) * 100}
+                    />
+                  </div>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+
+          {filteredRides.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <h3 className="text-lg font-medium">No rides found</h3>
+              <p className="text-muted-foreground mt-2">
+                Try adjusting your search criteria
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}

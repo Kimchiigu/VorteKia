@@ -1,0 +1,227 @@
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { useToast } from "@/hooks/use-toast";
+import { invoke } from "@tauri-apps/api/core";
+
+type User = {
+  user_id: string;
+  name: string;
+  email: string;
+  dob: string;
+  role: string;
+  balance: number;
+  restaurant_id: string | null;
+};
+
+type AuthContextType = {
+  user: User | null;
+  login: (uid: string) => Promise<boolean>;
+  logout: () => void;
+  fetchBalance: () => void;
+  topUpBalance: (amount: number) => Promise<boolean>;
+  notifications: Notification[];
+  fetchNotifications: () => void;
+};
+
+type Notification = {
+  notification_id: string;
+  title: string;
+  message: string;
+  date: string;
+  is_read: boolean;
+};
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { toast } = useToast();
+
+  // Check for saved user on mount
+  useEffect(() => {
+    const savedUser = localStorage.getItem("vortekia-user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  // Fetch updated balance if user is logged in
+  useEffect(() => {
+    if (user) {
+      fetchBalance();
+      fetchNotifications();
+    }
+  }, [user?.user_id]);
+
+  // Login function
+  const login = async (uid: string): Promise<boolean> => {
+    try {
+      console.log("Trying login");
+      const result = await invoke<{
+        success: boolean;
+        data?: User;
+        message?: string;
+      }>("login_user", { userId: uid });
+
+      console.log("login result : ", result);
+      if (result.data) {
+        setUser(result.data);
+        localStorage.setItem("vortekia-user", JSON.stringify(result.data));
+
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${result.data.name}!`,
+        });
+
+        return true;
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Login failed",
+          description: result.message || "Please try again",
+        });
+        return false;
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Login error",
+        description: "An unexpected error occurred.",
+      });
+      console.error("Login error:", error);
+      return false;
+    }
+  };
+
+  // Logout function
+  const logout = () => {
+    setUser(null);
+    setNotifications([]);
+    localStorage.removeItem("vortekia-user");
+
+    toast({
+      title: "Logged out",
+      description: "You have been logged out successfully",
+    });
+  };
+
+  // Fetch updated balance
+  const fetchBalance = async () => {
+    if (!user) return;
+
+    try {
+      const result = await invoke<{
+        success: boolean;
+        data?: { balance: number };
+      }>("get_balance", { userId: user.user_id });
+
+      if (result.success && result.data) {
+        setUser((prev) =>
+          prev ? { ...prev, balance: result.data!.balance } : null
+        );
+        localStorage.setItem(
+          "vortekia-user",
+          JSON.stringify({ ...user, balance: result.data!.balance })
+        );
+      }
+    } catch (error) {
+      console.error("Failed to fetch balance:", error);
+    }
+  };
+
+  // Top-up balance
+  const topUpBalance = async (amount: number): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const result = await invoke<{
+        success: boolean;
+        data?: { balance: number };
+      }>("top_up_balance", { userId: user.user_id, amount });
+
+      if (result.success && result.data) {
+        setUser((prev) =>
+          prev ? { ...prev, balance: result.data!.balance } : null
+        );
+        localStorage.setItem(
+          "vortekia-user",
+          JSON.stringify({ ...user, balance: result.data!.balance })
+        );
+
+        toast({
+          title: "Balance updated",
+          description: `$${amount} has been added to your balance`,
+        });
+
+        return true;
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Top-up failed",
+          description: "An error occurred. Please try again.",
+        });
+        return false;
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Top-up error",
+        description: "An unexpected error occurred.",
+      });
+      console.error("Top-up error:", error);
+      return false;
+    }
+  };
+
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    if (!user) return;
+
+    try {
+      const result = await invoke<{ success: boolean; data: Notification[] }>(
+        "view_notification",
+        { userId: user.user_id }
+      );
+
+      console.log("Notification User : ", result.data);
+
+      if (result.data) {
+        setNotifications(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        fetchBalance,
+        topUpBalance,
+        notifications,
+        fetchNotifications,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}
