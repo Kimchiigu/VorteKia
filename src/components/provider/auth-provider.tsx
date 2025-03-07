@@ -28,6 +28,7 @@ type AuthContextType = {
   topUpBalance: (amount: number) => Promise<boolean>;
   notifications: Notification[];
   fetchNotifications: () => void;
+  markAllNotificationsAsRead: () => void;
 };
 
 type Notification = {
@@ -145,9 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await invoke<{
         success: boolean;
         data?: { balance: number };
-      }>("top_up_balance", { userId: user.user_id, amount });
+      }>("top_up_balance", { payload: { user_id: user.user_id, amount } });
 
-      if (result.success && result.data) {
+      if (result.data) {
         setUser((prev) =>
           prev ? { ...prev, balance: result.data!.balance } : null
         );
@@ -201,6 +202,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const markAllNotificationsAsRead = async () => {
+    if (!user) return;
+
+    try {
+      // Update the state immediately for a smoother UI experience
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+
+      // Call backend to update all notifications
+      await invoke("mark_all_notifications_read", { userId: user.user_id });
+
+      // Refresh notifications from the backend
+      fetchNotifications();
+    } catch (error) {
+      console.error("Failed to mark all notifications as read:", error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -211,6 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         topUpBalance,
         notifications,
         fetchNotifications,
+        markAllNotificationsAsRead,
       }}
     >
       {children}

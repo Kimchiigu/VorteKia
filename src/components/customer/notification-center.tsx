@@ -13,7 +13,12 @@ import { useAuth } from "@/components/provider/auth-provider";
 import { Badge } from "@/components/ui/badge";
 
 export function NotificationCenter() {
-  const { user, notifications, fetchNotifications } = useAuth();
+  const {
+    user,
+    notifications,
+    fetchNotifications,
+    markAllNotificationsAsRead,
+  } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -32,7 +37,7 @@ export function NotificationCenter() {
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge
-              className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs"
+              className="absolute flex flex-col justify-center items-center -top-1 -right-1 h-5 w-5 p-0 text-xs"
               variant="destructive"
             >
               {unreadCount}
@@ -40,8 +45,16 @@ export function NotificationCenter() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0">
-        <ScrollArea className="h-80">
+      <PopoverContent className="w-80 p-3">
+        <Button
+          variant="default"
+          size="sm"
+          className="w-full mb-2"
+          onClick={markAllNotificationsAsRead}
+        >
+          Mark All as Read
+        </Button>
+        <ScrollArea className="h-80 p-3">
           {notifications.length > 0 ? (
             notifications.map((notification) => (
               <div

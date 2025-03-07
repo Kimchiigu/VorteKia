@@ -1,5 +1,4 @@
 import type React from "react";
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +12,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/components/provider/auth-provider";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DollarSign } from "lucide-react";
 
 interface TopUpDialogProps {
   open: boolean;
@@ -53,62 +59,72 @@ export function TopUpDialog({ open, onOpenChange }: TopUpDialogProps) {
     }
   };
 
+  const handleAmountChange = (value: string) => {
+    setSelectedAmount(value === "custom" ? "custom" : Number.parseInt(value));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Top Up Balance</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">
+            Top Up Balance
+          </DialogTitle>
           <DialogDescription>
             Add funds to your VorteKia virtual balance
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleTopUp}>
-          <div className="grid gap-4 py-4">
-            <RadioGroup
-              value={selectedAmount.toString()}
-              onValueChange={(value) =>
-                setSelectedAmount(
-                  value === "custom" ? "custom" : Number.parseInt(value)
-                )
-              }
-              className="grid grid-cols-2 gap-4"
-            >
-              {PRESET_AMOUNTS.map((amount) => (
-                <div key={amount} className="flex items-center space-x-2">
-                  <RadioGroupItem
-                    value={amount.toString()}
-                    id={`amount-${amount}`}
-                  />
-                  <Label htmlFor={`amount-${amount}`} className="flex-1">
-                    ${amount}
-                  </Label>
-                </div>
-              ))}
-              <div className="flex items-center space-x-2 col-span-2">
-                <RadioGroupItem value="custom" id="amount-custom" />
-                <Label htmlFor="amount-custom" className="flex-1">
-                  Custom amount
-                </Label>
-              </div>
-            </RadioGroup>
+          <div className="grid gap-6 pb-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount-select">Select amount</Label>
+              <Select
+                value={selectedAmount.toString()}
+                onValueChange={handleAmountChange}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select an amount" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRESET_AMOUNTS.map((amount) => (
+                    <SelectItem key={amount} value={amount.toString()}>
+                      ${amount}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">Custom amount</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {selectedAmount === "custom" && (
-              <div className="grid gap-2">
-                <Label htmlFor="custom-amount">Enter amount</Label>
-                <Input
-                  id="custom-amount"
-                  value={customAmount}
-                  onChange={(e) => setCustomAmount(e.target.value)}
-                  placeholder="Enter amount"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  required
-                />
+              <div className="space-y-2">
+                <Label htmlFor="custom-amount">Enter custom amount</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="custom-amount"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    className="pl-8"
+                    required
+                  />
+                </div>
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? "Processing..." : "Top Up"}
             </Button>

@@ -1,9 +1,9 @@
 use anyhow::Result;
-use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, ActiveModelTrait, Set, DatabaseConnection};
 use serde::Serialize;
 use tauri::State;
 use crate::{ApiResponse, cache_get, cache_set, AppState};
-use entity::notification::{self, Entity as Notification};
+use entity::notification::{self, Entity as Notification, ActiveModel as NotificationActiveModel};
 
 #[derive(Serialize)]
 pub struct NotificationResponse {
@@ -50,6 +50,31 @@ pub async fn view_notification(
             }).collect();
             cache_set(&state.redis_pool, &cache_key, &notifications, 600).await;
             Ok(ApiResponse::success(formatted_notifications))
+        }
+        Err(err) => Ok(ApiResponse::error(format!("Failed to fetch notifications: {}", err))),
+    }
+}
+
+#[tauri::command]
+pub async fn mark_all_notifications_read(
+    state: State<'_, AppState>,
+    user_id: String
+) -> Result<ApiResponse<()>, String> {
+    let db: &DatabaseConnection = &state.db;
+    match Notification::find()
+        .filter(notification::Column::RecipientId.eq(user_id.clone()))
+        .all(db)
+        .await
+    {
+        Ok(notifications) => {
+            for notification in notifications {
+                let mut active_model: NotificationActiveModel = notification.into();
+                active_model.is_read = Set(true);
+                if let Err(err) = active_model.update(db).await {
+                    return Ok(ApiResponse::error(format!("Failed to mark notifications as read: {}", err)));
+                }
+            }
+            Ok(ApiResponse::success(()))
         }
         Err(err) => Ok(ApiResponse::error(format!("Failed to fetch notifications: {}", err))),
     }
