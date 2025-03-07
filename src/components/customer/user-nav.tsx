@@ -1,9 +1,6 @@
-"use client";
-
 import { useAuth } from "@/components/provider/auth-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { invoke } from "@tauri-apps/api/core";
 import {
   DropdownMenu,
   DropdownMenuContent,

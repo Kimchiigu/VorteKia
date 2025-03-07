@@ -10,16 +10,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { invoke } from "@tauri-apps/api/core";
 
-type User = {
-  user_id: string;
-  name: string;
-  email: string;
-  dob: string;
-  role: string;
-  balance: number;
-  restaurant_id: string | null;
-};
-
 type AuthContextType = {
   user: User | null;
   login: (uid: string) => Promise<boolean>;
@@ -46,7 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const { toast } = useToast();
 
-  // Check for saved user on mount
   useEffect(() => {
     const savedUser = localStorage.getItem("vortekia-user");
     if (savedUser) {
@@ -54,7 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Fetch updated balance if user is logged in
   useEffect(() => {
     if (user) {
       fetchBalance();
@@ -62,7 +50,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.user_id]);
 
-  // Login function
   const login = async (uid: string): Promise<boolean> => {
     try {
       console.log("Trying login");
@@ -102,7 +89,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Logout function
   const logout = () => {
     setUser(null);
     setNotifications([]);
@@ -114,7 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // Fetch updated balance
   const fetchBalance = async () => {
     if (!user) return;
 
@@ -138,7 +123,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Top-up balance
   const topUpBalance = async (amount: number): Promise<boolean> => {
     if (!user) return false;
 
@@ -182,7 +166,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Fetch notifications
   const fetchNotifications = async () => {
     if (!user) return;
 
@@ -206,13 +189,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     try {
-      // Update the state immediately for a smoother UI experience
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-
-      // Call backend to update all notifications
       await invoke("mark_all_notifications_read", { userId: user.user_id });
-
-      // Refresh notifications from the backend
       fetchNotifications();
     } catch (error) {
       console.error("Failed to mark all notifications as read:", error);

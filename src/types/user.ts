@@ -4,6 +4,6 @@ interface User {
   email: string;
   dob: string;
   role: string;
-  balance: Float64Array;
+  balance: number;
   restaurant_id: string | null;
 }

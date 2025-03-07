@@ -34,7 +34,7 @@ pub async fn view_all_menus(
                 description: m.description,
                 price: m.price,
                 available_quantity: m.available_quantity,
-                image: encode(&m.image), // Convert binary image to Base64
+                image: encode(&m.image),
             })
             .collect();
 
@@ -59,7 +59,7 @@ pub async fn view_all_menus(
                     description: m.description,
                     price: m.price,
                     available_quantity: m.available_quantity,
-                    image: encode(&m.image), // Convert binary image to Base64
+                    image: encode(&m.image),
                 })
                 .collect();
 

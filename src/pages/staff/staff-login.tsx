@@ -11,7 +11,6 @@ export default function StaffLogin() {
       <NavbarStaff />
       <div className="flex flex-grow items-center justify-center">
         <div className="container mx-auto px-4 flex flex-col items-center justify-center">
-          {/* Branding Section */}
           <div className="text-center mb-8">
             <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center mx-auto">
               <Lock className="h-6 w-6 text-primary-foreground" />
@@ -24,7 +23,6 @@ export default function StaffLogin() {
             </p>
           </div>
 
-          {/* Login Card */}
           <div className="w-full max-w-md">
             <Card>
               <CardContent className="space-y-4 mt-4">
@@ -46,7 +44,6 @@ export default function StaffLogin() {
             </Card>
           </div>
 
-          {/* Footer */}
           <div className="text-center text-sm text-muted-foreground mt-8">
             <p>Staff use only. Unauthorized access is prohibited.</p>
             <p className="mt-1">

@@ -1,5 +1,3 @@
-"use client";
-
 import type React from "react";
 
 import { useState, useRef, useEffect } from "react";
@@ -30,7 +28,6 @@ type Message = {
   timestamp: Date;
 };
 
-// Mock responses for the customer service chat
 const MOCK_RESPONSES = [
   "Thank you for contacting VorteKia customer service. How can I help you today?",
   "I understand your concern. Let me check that for you.",
@@ -50,7 +47,6 @@ export function CustomerServiceDialog({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
-  // Initialize with a welcome message
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([
@@ -65,7 +61,6 @@ export function CustomerServiceDialog({
     }
   }, [open, messages.length]);
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -74,7 +69,6 @@ export function CustomerServiceDialog({
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       content: newMessage,
@@ -85,10 +79,8 @@ export function CustomerServiceDialog({
     setMessages((prev) => [...prev, userMessage]);
     setNewMessage("");
 
-    // Simulate agent typing
     setIsTyping(true);
 
-    // Simulate agent response after a delay
     setTimeout(() => {
       const randomResponse =
         MOCK_RESPONSES[Math.floor(Math.random() * MOCK_RESPONSES.length)];

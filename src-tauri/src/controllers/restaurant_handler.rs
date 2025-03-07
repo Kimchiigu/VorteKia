@@ -35,7 +35,7 @@ pub async fn view_all_restaurants(
                 name: r.name,
                 description: r.description,
                 cuisine_type: r.cuisine_type,
-                image: encode(&r.image), // Convert to Base64
+                image: encode(&r.image),
                 location: r.location,
                 operational_status: r.operational_status,
                 operational_start_hours: r.operational_start_hours,
@@ -85,8 +85,8 @@ pub struct CreateRestaurantRequest {
     image: Vec<u8>,
     location: String,
     operational_status: String,
-    operational_start_hours: String,  // Changed field name to match model
-    operational_end_hours: String,    // Changed field name to match model
+    operational_start_hours: String,
+    operational_end_hours: String,
 }
 
 #[tauri::command]
@@ -100,8 +100,8 @@ pub async fn create_restaurant(
         image: Set(payload.image),
         location: Set(payload.location),
         operational_status: Set(payload.operational_status),
-        operational_start_hours: Set(payload.operational_start_hours),  // Set using string
-        operational_end_hours: Set(payload.operational_end_hours),      // Set using string
+        operational_start_hours: Set(payload.operational_start_hours),
+        operational_end_hours: Set(payload.operational_end_hours),
         ..Default::default()
     };
 
@@ -143,8 +143,8 @@ pub struct UpdateRestaurantRequest {
     image: Vec<u8>,
     location: String,
     operational_status: String,
-    operational_start_hours: String,  // Changed field name to match model
-    operational_end_hours: String,    // Changed field name to match model
+    operational_start_hours: String,
+    operational_end_hours: String,
 }
 
 #[tauri::command]
@@ -159,8 +159,8 @@ pub async fn update_restaurant(
             active_restaurant.image = Set(payload.image);
             active_restaurant.location = Set(payload.location);
             active_restaurant.operational_status = Set(payload.operational_status);
-            active_restaurant.operational_start_hours = Set(payload.operational_start_hours);  // Set using string
-            active_restaurant.operational_end_hours = Set(payload.operational_end_hours);      // Set using string
+            active_restaurant.operational_start_hours = Set(payload.operational_start_hours);
+            active_restaurant.operational_end_hours = Set(payload.operational_end_hours);
 
             match active_restaurant.update(&state.db).await {
                 Ok(updated_restaurant) => {

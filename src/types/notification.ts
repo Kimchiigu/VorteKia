@@ -1,9 +1,9 @@
 interface Notification {
-  notification_id: String;
-  notificationTitle: String;
-  message: String;
-  recipient_id: String;
-  date: String;
-  is_read: Boolean;
-  type: String;
+  notification_id: string;
+  notificationtitle: string;
+  message: string;
+  recipient_id: string;
+  date: string;
+  is_read: boolean;
+  type: string;
 }
