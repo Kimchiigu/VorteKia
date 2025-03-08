@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LoginDialog } from "./login-dialog";
+import { LoginDialog } from "../customer/login-dialog";
 import { useAuth } from "@/components/provider/auth-provider";
 import { UserNav } from "./user-nav";
-import { NotificationCenter } from "./notification-center";
+
+import { NotificationCenter } from "../customer/notification-center";
 import { Menu, X } from "lucide-react";
 import { ModeToggle } from "../mode-toggle";
 import { useNavigate } from "react-router";
+import { StaffNav } from "./staff-nav";
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -29,7 +31,7 @@ export function Navbar() {
           {user ? (
             <>
               <NotificationCenter />
-              <UserNav />
+              {user.role === "Customer" ? <UserNav /> : <StaffNav />}
             </>
           ) : (
             <LoginDialog />

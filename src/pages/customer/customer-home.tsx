@@ -1,5 +1,5 @@
 import { HeroCustomer } from "@/components/customer/hero-customer";
-import { Navbar } from "@/components/customer/navbar";
+import { Navbar } from "@/components/navbar/navbar";
 import { RestaurantsSection } from "@/components/restaurants/restaurants-section";
 import { RidesSection } from "@/components/rides/rides-section";
 

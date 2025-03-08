@@ -12,10 +12,9 @@ impl MigrationTrait for Migration {
                     .table(Transaction::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(Transaction::TransactionID).string().not_null().primary_key())
-                    .col(ColumnDef::new(Transaction::Type).string().not_null())
                     .col(ColumnDef::new(Transaction::Amount).double().not_null())
                     .col(ColumnDef::new(Transaction::Date).date().not_null())
-                    .col(ColumnDef::new(Transaction::Status).string().not_null())
+                    .col(ColumnDef::new(Transaction::IsPaid).boolean().not_null())
                     .col(ColumnDef::new(Transaction::CustomerID).string().not_null())
                     .foreign_key(
                         ForeignKey::create()
@@ -43,11 +42,10 @@ impl MigrationTrait for Migration {
 enum Transaction {
     Table,
     TransactionID,
-    Type,
     Amount,
     Date,
     CustomerID,
-    Status,
+    IsPaid,
 }
 
 #[derive(Iden)]

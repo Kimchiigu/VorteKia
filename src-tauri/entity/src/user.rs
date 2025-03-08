@@ -26,8 +26,6 @@ pub enum Relation {
     Message,
     #[sea_orm(has_many = "super::notification::Entity")]
     Notification,
-    #[sea_orm(has_many = "super::order::Entity")]
-    Order,
     #[sea_orm(has_many = "super::proposal::Entity")]
     Proposal,
     #[sea_orm(has_many = "super::queue::Entity")]
@@ -63,12 +61,6 @@ impl Related<super::message::Entity> for Entity {
 impl Related<super::notification::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Notification.def()
-    }
-}
-
-impl Related<super::order::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Order.def()
     }
 }
 

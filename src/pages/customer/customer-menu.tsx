@@ -1,4 +1,4 @@
-import { Navbar } from "@/components/customer/navbar";
+import { Navbar } from "@/components/navbar/navbar";
 import { MenuSection } from "@/components/restaurants/menu-section";
 
 export default function CustomerMenu() {

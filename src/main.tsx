@@ -11,6 +11,7 @@ import StoreHome from "./pages/store/store-home";
 import StaffLogin from "./pages/staff/staff-login";
 import StaffHome from "./pages/staff/staff-home";
 import StoreItem from "./pages/store/store-item";
+import StoreOrder from "./pages/store/store-order";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <BrowserRouter>
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         <Route path="restaurant" element={<RestaurantHome />} />
         <Route path="store" element={<StoreHome />} />
         <Route path="store/:store_id" element={<StoreItem />} />
+        <Route path="store/order" element={<StoreOrder />} />
         <Route path="staff" element={<StaffLogin />} />
         <Route path="staff/home" element={<StaffHome />} />
       </Route>

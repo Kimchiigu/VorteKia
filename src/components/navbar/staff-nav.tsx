@@ -10,14 +10,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TopUpDialog } from "./top-up-dialog";
 import { CreditCard, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 
-export function UserNav() {
-  const { user, logout, fetchBalance, fetchNotifications } =
-    useAuth();
-  const [topUpOpen, setTopUpOpen] = useState(false);
+export function StaffNav() {
+  const { user, logout, fetchBalance, fetchNotifications } = useAuth();
 
   useEffect(() => {
     fetchBalance();
@@ -47,22 +44,12 @@ export function UserNav() {
               </p>
             </div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => setTopUpOpen(true)}>
-              <CreditCard className="mr-2 h-4 w-4" />
-              <span>Top Up Balance</span>
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logout}>
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <TopUpDialog open={topUpOpen} onOpenChange={setTopUpOpen} />
     </>
   );
 }

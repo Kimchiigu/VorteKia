@@ -1,11 +1,10 @@
 use anyhow::Result;
 use base64::encode;
-use entity::souvenir::{self, ActiveModel as SouvenirActiveModel, Entity as Souvenir};
-use sea_orm::{ActiveModelTrait, EntityTrait, QueryOrder, ActiveValue::Set};
-use serde::Deserialize;
+use entity::souvenir::{self, Entity as Souvenir};
+use sea_orm::{EntityTrait, QueryOrder};
 use serde::Serialize;
 use tauri::State;
-use crate::{ApiResponse, cache_get, cache_set, cache_delete, AppState};
+use crate::{ApiResponse, cache_get, cache_set, AppState};
 
 #[derive(Serialize)]
 pub struct SouvenirResponse {

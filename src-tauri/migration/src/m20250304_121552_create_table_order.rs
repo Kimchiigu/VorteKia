@@ -12,14 +12,15 @@ impl MigrationTrait for Migration {
                     .table(Order::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(Order::OrderID).string().not_null().primary_key())
-                    .col(ColumnDef::new(Order::CustomerID).string().not_null())
-                    .col(ColumnDef::new(Order::OrderStatus).string().not_null())
-                    .col(ColumnDef::new(Order::TotalPrice).double().not_null())
+                    .col(ColumnDef::new(Order::TransactionID).string().not_null())
+                    .col(ColumnDef::new(Order::ItemType).string().not_null())
+                    .col(ColumnDef::new(Order::ItemID).string().not_null())
+                    .col(ColumnDef::new(Order::Quantity).string().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                            .name("fk_order_user")
-                            .from(Order::Table, Order::CustomerID)
-                            .to(User::Table, User::UserID),
+                            .name("fk_order_transaction")
+                            .from(Order::Table, Order::TransactionID)
+                            .to(Transaction::Table, Transaction::TransactionID),
                     )
                     .to_owned(),
             )
@@ -41,13 +42,14 @@ impl MigrationTrait for Migration {
 enum Order {
     Table,
     OrderID,
-    CustomerID,
-    OrderStatus,
-    TotalPrice,
+    TransactionID,
+    ItemType,
+    ItemID,
+    Quantity,
 }
 
 #[derive(Iden)]
-enum User {
+enum Transaction {
     Table,
-    UserID,
+    TransactionID,
 }

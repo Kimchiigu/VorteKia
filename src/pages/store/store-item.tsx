@@ -1,4 +1,4 @@
-import { Navbar } from "@/components/customer/navbar";
+import { Navbar } from "@/components/navbar/navbar";
 import SouvenirSection from "@/components/store/souvenir-section";
 
 export default function StoreItem() {

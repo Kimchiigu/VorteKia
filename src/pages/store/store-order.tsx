@@ -1,15 +1,13 @@
 import { Navbar } from "@/components/navbar/navbar";
-import { HeroRide } from "@/components/rides/hero-ride";
-import { RidesSection } from "@/components/rides/rides-section";
+import OrderSection from "@/components/order/order-section";
 
-export default function RideHome() {
+export default function StoreOrder() {
   return (
     <main className="min-h-screen w-full bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <HeroRide />
         <div className="mt-12 space-y-16">
-          <RidesSection />
+          <OrderSection />
         </div>
       </div>
     </main>
