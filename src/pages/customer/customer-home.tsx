@@ -1,7 +1,7 @@
 import { HeroCustomer } from "@/components/customer/hero-customer";
 import { Navbar } from "@/components/navbar/navbar";
-import { RestaurantsSection } from "@/components/restaurants/restaurants-section";
-import { RidesSection } from "@/components/rides/rides-section";
+import { RestaurantsSection } from "@/components/restaurant/restaurants-section";
+import { RidesSection } from "@/components/ride/rides-section";
 
 export default function CustomerHome() {
   return (

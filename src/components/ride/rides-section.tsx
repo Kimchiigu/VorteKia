@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Search } from "lucide-react";
-import SkeletonLoading from "../loading/skeleton";
+import SkeletonLoading from "../loader/skeleton";
 
 interface Ride {
   ride_id: number;

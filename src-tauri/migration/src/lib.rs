@@ -10,7 +10,6 @@ mod m20250304_121534_create_table_souvenir;
 mod m20250304_121542_create_table_restaurant;
 mod m20250304_121547_create_table_menu;
 mod m20250304_121552_create_table_order;
-mod m20250304_121558_create_table_transaction;
 mod m20250304_121604_create_table_proposal;
 mod m20250304_121609_create_table_report;
 mod m20250304_121615_create_table_notification;
@@ -32,7 +31,6 @@ impl MigratorTrait for Migrator {
             Box::new(m20250304_121527_create_table_store::Migration),
             Box::new(m20250304_121534_create_table_souvenir::Migration),
             Box::new(m20250304_121547_create_table_menu::Migration),
-            Box::new(m20250304_121558_create_table_transaction::Migration),
             Box::new(m20250304_121552_create_table_order::Migration),
             Box::new(m20250304_121604_create_table_proposal::Migration),
             Box::new(m20250304_121609_create_table_report::Migration),

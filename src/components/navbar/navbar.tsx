@@ -6,7 +6,7 @@ import { UserNav } from "./user-nav";
 
 import { NotificationCenter } from "../customer/notification-center";
 import { Menu, X } from "lucide-react";
-import { ModeToggle } from "../mode-toggle";
+import { ModeToggle } from "../theme/mode-toggle";
 import { useNavigate } from "react-router";
 import { StaffNav } from "./staff-nav";
 

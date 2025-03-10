@@ -1,3 +1,7 @@
+"use client";
+
+import { CardFooter } from "@/components/ui/card";
+
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -8,7 +12,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Minus, Plus, Check, ShoppingBag } from "lucide-react";
@@ -22,27 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-// Define Souvenir type
-interface Souvenir {
-  souvenir_id: string;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  image?: string;
-  store_id: string;
-}
-
-// Define Order payload type
-interface CreateOrderPayload {
-  order_id: string;
-  customer_id: string;
-  item_type: string;
-  item_id: string;
-  quantity: number;
-  is_paid: boolean;
-}
 
 export default function SouvenirSection() {
   const { store_id } = useParams<{ store_id: string }>();
@@ -90,45 +72,30 @@ export default function SouvenirSection() {
     setIsQuantityModalOpen(true);
   };
 
-  // Handle confirming the quantity & creating an order
-  const handleConfirmQuantity = async () => {
-    if (!user?.user_id) {
-      console.error("User not logged in!");
-      return;
+  // Handle confirming the quantity
+  const handleConfirmQuantity = () => {
+    // Here you would typically add the item to the cart
+    // For now, we'll just show the success modal
+    setIsQuantityModalOpen(false);
+    setIsSuccessModalOpen(true);
+
+    // Auto-close success modal after 2 seconds
+    setTimeout(() => {
+      setIsSuccessModalOpen(false);
+      setSelectedSouvenir(null);
+    }, 2000);
+  };
+
+  // Handle quantity changes
+  const incrementQuantity = () => {
+    if (selectedSouvenir && quantity < selectedSouvenir.stock) {
+      setQuantity((prev) => prev + 1);
     }
+  };
 
-    if (!selectedSouvenir) return;
-
-    try {
-      // Generate unique order_id
-      const orderId = `order_${Date.now()}`;
-      console.log("Creating order...");
-
-      // Call backend to create order
-      await invoke("create_order", {
-        payload: {
-          order_id: orderId,
-          customer_id: user.user_id,
-          item_type: "souvenir",
-          item_id: selectedSouvenir.souvenir_id,
-          quantity: quantity,
-          is_paid: false, // Default: not paid yet
-        } as CreateOrderPayload,
-      });
-
-      console.log("Order created successfully!");
-
-      // Show success modal
-      setIsQuantityModalOpen(false);
-      setIsSuccessModalOpen(true);
-
-      // Auto-close success modal after 2 seconds
-      setTimeout(() => {
-        setIsSuccessModalOpen(false);
-        setSelectedSouvenir(null);
-      }, 2000);
-    } catch (error) {
-      console.error("Failed to create order:", error);
+  const decrementQuantity = () => {
+    if (quantity > 1) {
+      setQuantity((prev) => prev - 1);
     }
   };
 
@@ -165,7 +132,7 @@ export default function SouvenirSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {souvenirs.map((souvenir) => (
             <Card key={souvenir.souvenir_id} className="overflow-hidden">
-              <div className="aspect-video w-full overflow-hidden rounded-t-lg">
+              <div className="aspect-video w-full overflow-hidden">
                 <img
                   src={
                     souvenir.image
@@ -177,8 +144,10 @@ export default function SouvenirSection() {
                 />
               </div>
               <CardHeader>
-                <CardTitle>{souvenir.name}</CardTitle>
-                <Badge>${souvenir.price.toFixed(2)}</Badge>
+                <div className="flex justify-between items-start">
+                  <CardTitle>{souvenir.name}</CardTitle>
+                  <Badge>${souvenir.price.toFixed(2)}</Badge>
+                </div>
               </CardHeader>
               <CardContent>
                 <CardDescription>{souvenir.description}</CardDescription>
@@ -214,28 +183,70 @@ export default function SouvenirSection() {
               Select the quantity you would like to purchase
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="flex justify-between items-center">
-              <span>Quantity:</span>
-              <div className="flex items-center">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-12 text-center">{quantity}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity((q) => q + 1)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+
+          {selectedSouvenir && (
+            <div className="py-4">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
+                  <img
+                    src={
+                      selectedSouvenir.image
+                        ? `data:image/png;base64,${selectedSouvenir.image}`
+                        : "/placeholder.svg?height=100&width=100"
+                    }
+                    alt={selectedSouvenir.name}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-medium">{selectedSouvenir.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    {selectedSouvenir.description}
+                  </p>
+                  <div className="font-bold">
+                    ${selectedSouvenir.price.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span>Quantity:</span>
+                <div className="flex items-center">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={decrementQuantity}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+
+                  <span className="w-12 text-center">{quantity}</span>
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={incrementQuantity}
+                    disabled={
+                      selectedSouvenir && quantity >= selectedSouvenir.stock
+                    }
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-between items-center">
+                <span>Total:</span>
+                <span className="font-bold">
+                  ${(selectedSouvenir.price * quantity).toFixed(2)}
+                </span>
               </div>
             </div>
-          </div>
+          )}
+
           <DialogFooter>
             <Button
               variant="outline"

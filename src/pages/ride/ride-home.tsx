@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/navbar/navbar";
-import { HeroRide } from "@/components/rides/hero-ride";
-import { RidesSection } from "@/components/rides/rides-section";
+import { HeroRide } from "@/components/ride/hero-ride";
+import { RidesSection } from "@/components/ride/rides-section";
 
 export default function RideHome() {
   return (

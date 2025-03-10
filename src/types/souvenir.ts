@@ -1,9 +1,9 @@
 interface Souvenir {
-  souvenir_id: string;
-  store_id: string;
+  souvenir_id: number;
+  store_id: number;
   name: string;
   description: string;
   price: number;
   stock: number;
-  image: string;
+  image: string | null;
 }

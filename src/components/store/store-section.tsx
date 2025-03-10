@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
 import { useNavigate } from "react-router";
-import SkeletonLoading from "../loading/skeleton";
+import SkeletonLoading from "../loader/skeleton";
 
 export function StoreSection() {
   const [stores, setStores] = useState<Store[]>([]);

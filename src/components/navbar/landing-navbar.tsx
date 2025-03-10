@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ModeToggle } from "../mode-toggle";
+import { ModeToggle } from "../theme/mode-toggle";
 
 export default function LandingNavbar() {
   const [currentTime, setCurrentTime] = useState(

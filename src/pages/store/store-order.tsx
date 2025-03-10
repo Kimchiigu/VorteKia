@@ -1,5 +1,5 @@
 import { Navbar } from "@/components/navbar/navbar";
-import OrderSection from "@/components/order/order-section";
+import OrderSection from "@/components/transaction/order-section";
 
 export default function StoreOrder() {
   return (

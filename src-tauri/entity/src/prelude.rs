@@ -15,5 +15,4 @@ pub use super::restaurant::Entity as Restaurant;
 pub use super::ride::Entity as Ride;
 pub use super::souvenir::Entity as Souvenir;
 pub use super::store::Entity as Store;
-pub use super::transaction::Entity as Transaction;
 pub use super::user::Entity as User;

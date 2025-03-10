@@ -17,5 +17,4 @@ pub mod restaurant;
 pub mod ride;
 pub mod souvenir;
 pub mod store;
-pub mod transaction;
 pub mod user;

@@ -26,6 +26,8 @@ pub enum Relation {
     Message,
     #[sea_orm(has_many = "super::notification::Entity")]
     Notification,
+    #[sea_orm(has_many = "super::order::Entity")]
+    Order,
     #[sea_orm(has_many = "super::proposal::Entity")]
     Proposal,
     #[sea_orm(has_many = "super::queue::Entity")]
@@ -42,8 +44,6 @@ pub enum Relation {
     Restaurant,
     #[sea_orm(has_many = "super::store::Entity")]
     Store,
-    #[sea_orm(has_many = "super::transaction::Entity")]
-    Transaction,
 }
 
 impl Related<super::maintenance::Entity> for Entity {
@@ -61,6 +61,12 @@ impl Related<super::message::Entity> for Entity {
 impl Related<super::notification::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Notification.def()
+    }
+}
+
+impl Related<super::order::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Order.def()
     }
 }
 
@@ -91,12 +97,6 @@ impl Related<super::restaurant::Entity> for Entity {
 impl Related<super::store::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Store.def()
-    }
-}
-
-impl Related<super::transaction::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Transaction.def()
     }
 }
 

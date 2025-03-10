@@ -1,5 +1,5 @@
-import WorldMap from "@/components/3D/world-map";
-import LandingNavbar from "@/components/landing/landing-navbar";
+import WorldMap from "@/components/landing/world-map";
+import LandingNavbar from "@/components/navbar/landing-navbar";
 
 export default function LandingPage() {
   return (

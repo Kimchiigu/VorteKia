@@ -14,7 +14,6 @@ pub mod restaurant;
 pub mod ride;
 pub mod souvenir;
 pub mod store;
-pub mod transaction;
 pub mod user;
 
 pub fn add(left: u64, right: u64) -> u64 {

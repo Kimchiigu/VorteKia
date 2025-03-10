@@ -1,5 +1,5 @@
 import { Navbar } from "@/components/navbar/navbar";
-import { RidesSection } from "@/components/rides/rides-section";
+import { RidesSection } from "@/components/ride/rides-section";
 import { HeroStaff } from "@/components/staff/hero-staff";
 
 export default function StaffHome() {

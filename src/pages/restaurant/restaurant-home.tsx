@@ -1,8 +1,8 @@
 import { Navbar } from "@/components/navbar/navbar";
-import { CartSection } from "@/components/order/cart-section";
+import { CartSection } from "@/components/transaction/cart-section";
 import { useAuth } from "@/components/provider/auth-provider";
-import { HeroRestaurant } from "@/components/restaurants/hero-restaurant";
-import { RestaurantsSection } from "@/components/restaurants/restaurants-section";
+import { HeroRestaurant } from "@/components/restaurant/hero-restaurant";
+import { RestaurantsSection } from "@/components/restaurant/restaurants-section";
 
 export default function RestaurantHome() {
   const { user } = useAuth();

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,43 +12,49 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ShoppingBag, ShoppingCart, X } from "lucide-react";
+import { ShoppingCart, X } from "lucide-react";
 import { useNavigate } from "react-router";
 
-// Mock cart data
-const mockCartItems = [
-  {
-    id: 1,
-    name: "VorteKia T-Shirt",
-    price: 24.99,
-    quantity: 2,
-    image: "/placeholder.svg?height=80&width=80",
-  },
-  {
-    id: 2,
-    name: "Park Souvenir Mug",
-    price: 12.99,
-    quantity: 1,
-    image: "/placeholder.svg?height=80&width=80",
-  },
-  {
-    id: 3,
-    name: "Plush Mascot Toy",
-    price: 19.99,
-    quantity: 1,
-    image: "/placeholder.svg?height=80&width=80",
-  },
-];
+// Props to determine which page is currently active
+interface CartSectionProps {
+  pageType: "restaurant" | "store" | "ride";
+  customerId: string; // Logged-in user
+}
 
-export function CartSection() {
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+  orderType: string;
+}
+
+export function CartSection({ pageType, customerId }: CartSectionProps) {
   const navigate = useNavigate();
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Calculate totals
-  const itemCount = mockCartItems.reduce(
-    (total, item) => total + item.quantity,
-    0
-  );
-  const subtotal = mockCartItems.reduce(
+  useEffect(() => {
+    async function fetchCartItems() {
+      try {
+        const response: CartItem[] = await invoke("view_orders", {
+          customer_id: customerId,
+          order_type: pageType,
+        });
+        setCartItems(response);
+      } catch (error) {
+        console.error("Failed to fetch cart data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCartItems();
+  }, [pageType, customerId]);
+
+  const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const subtotal = cartItems.reduce(
     (total, item) => total + item.price * item.quantity,
     0
   );
@@ -69,7 +77,7 @@ export function CartSection() {
               variant="ghost"
               size="sm"
               className="text-muted-foreground hover:text-foreground"
-              onClick={() => navigate("/store/order")}
+              onClick={() => navigate(`/${pageType}/order`)}
             >
               View full cart
             </Button>
@@ -77,9 +85,11 @@ export function CartSection() {
         </CardHeader>
 
         <CardContent>
-          {mockCartItems.length > 0 ? (
+          {loading ? (
+            <p>Loading cart...</p>
+          ) : cartItems.length > 0 ? (
             <div className="space-y-4">
-              {mockCartItems.map((item) => (
+              {cartItems.map((item) => (
                 <div key={item.id} className="flex items-center gap-3">
                   <div className="h-16 w-16 rounded-md overflow-hidden flex-shrink-0">
                     <img
@@ -124,7 +134,7 @@ export function CartSection() {
               <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <h3 className="text-lg font-medium">Your cart is empty</h3>
               <p className="text-muted-foreground mt-1">
-                Add items from our stores to get started
+                Add items from our {pageType} to get started
               </p>
             </div>
           )}
@@ -134,10 +144,9 @@ export function CartSection() {
           <Button
             className="w-full"
             size="lg"
-            onClick={() => navigate("/store/order")}
-            disabled={mockCartItems.length === 0}
+            onClick={() => navigate(`/${pageType}/order`)}
+            disabled={cartItems.length === 0}
           >
-            <ShoppingBag className="h-4 w-4 mr-2" />
             Checkout (${subtotal.toFixed(2)})
           </Button>
         </CardFooter>

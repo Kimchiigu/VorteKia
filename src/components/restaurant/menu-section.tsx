@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import SkeletonLoading from "../loading/skeleton";
+import SkeletonLoading from "../loader/skeleton";
 
 export function MenuSection() {
   const navigate = useNavigate();
