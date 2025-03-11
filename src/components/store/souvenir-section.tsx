@@ -109,7 +109,7 @@ export default function SouvenirSection() {
         payload: {
           order_id: orderId,
           customer_id: user.user_id,
-          item_type: "souvenir",
+          item_type: "store",
           item_id: selectedSouvenir.souvenir_id,
           quantity: quantity,
           is_paid: false, // Default: not paid yet

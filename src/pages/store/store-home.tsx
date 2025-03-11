@@ -14,9 +14,7 @@ export default function StoreHome() {
       <div className="container mx-auto px-4 py-8">
         <HeroStore />
         <div className="mt-12 space-y-16">
-          {customerId && (
-            <CartSection customerId={customerId} pageType="store" />
-          )}
+          {customerId && <CartSection pageType="store" />}
           <StoreSection />
         </div>
       </div>

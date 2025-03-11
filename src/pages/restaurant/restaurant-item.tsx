@@ -1,13 +1,13 @@
 import { Navbar } from "@/components/navbar/navbar";
-import OrderSection from "@/components/transaction/order-section";
+import { MenuSection } from "@/components/restaurant/menu-section";
 
-export default function StoreOrder() {
+export default function RestaurantItem() {
   return (
     <main className="min-h-screen w-full bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="mt-12 space-y-16">
-          <OrderSection pageType="store" />
+          <MenuSection />
         </div>
       </div>
     </main>

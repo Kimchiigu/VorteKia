@@ -13,7 +13,7 @@ export default function RestaurantHome() {
       <div className="container mx-auto px-4 py-8">
         <HeroRestaurant />
         <div className="mt-12 space-y-16">
-          {user && <CartSection />}
+          {user && <CartSection pageType="restaurant" />}
           <RestaurantsSection />
         </div>
       </div>

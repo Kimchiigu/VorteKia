@@ -14,7 +14,7 @@ use controllers::queue_handler::{view_all_queues, create_queue, delete_queue, ge
 use controllers::user_handler::{login_user, get_balance, top_up_balance, get_notifications};
 use controllers::notification_handler::{view_notification, mark_all_notifications_read};
 use controllers::store_handler::{view_all_stores, create_store, update_store, delete_store};
-use controllers::souvenir_handler::view_all_souvenirs;
+use controllers::souvenir_handler::{view_all_souvenirs, view_souvenir};
 use controllers::order_handler::{view_all_orders, view_orders, create_order, update_order, delete_order};
 
 struct AppState {
@@ -173,6 +173,7 @@ pub fn run() {
             update_store,
             delete_store,
             view_all_souvenirs,
+            view_souvenir,
             view_all_orders,
             view_orders,
             create_order,

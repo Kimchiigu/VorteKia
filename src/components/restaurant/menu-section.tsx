@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import SkeletonLoading from "../loader/skeleton";
+import BackHeader from "../util/back-header";
 
 export function MenuSection() {
   const navigate = useNavigate();
@@ -51,24 +52,7 @@ export function MenuSection() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2 w-fit"
-            onClick={() => navigate("/customer")}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Restaurants
-          </Button>
-
-          <div className="flex flex-col">
-            <h2 className="text-3xl font-bold tracking-tight">Menu</h2>
-            <p className="text-muted-foreground">
-              Explore the delicious offerings of this restaurant.
-            </p>
-          </div>
-        </div>
+        <BackHeader pageType="restaurant" />
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
