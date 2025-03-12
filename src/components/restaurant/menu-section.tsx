@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router";
 import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,16 +11,39 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { Minus, Plus, Check, ShoppingBag } from "lucide-react";
 import SkeletonLoading from "../loader/skeleton";
+import { useAuth } from "@/components/provider/auth-provider";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import BackHeader from "../util/back-header";
 
-export function MenuSection() {
-  const navigate = useNavigate();
+interface CreateOrderPayload {
+  order_id: string;
+  customer_id: string;
+  item_type: string;
+  item_id: string;
+  quantity: number;
+  is_paid: boolean;
+}
+
+export default function MenuSection() {
   const { restaurant_id } = useParams<{ restaurant_id: string }>();
   const [menus, setMenus] = useState<Menu[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchMenus() {
@@ -49,89 +73,174 @@ export function MenuSection() {
     }
   }, [restaurant_id]);
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col space-y-6">
-        <BackHeader pageType="restaurant" />
+  const handleAddToCart = (menu: Menu) => {
+    setSelectedMenu(menu);
+    setQuantity(1);
+    setIsQuantityModalOpen(true);
+  };
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array(6)
-              .fill(0)
-              .map((_, index) => (
-                <SkeletonLoading key={index} />
-              ))}
-          </div>
-        ) : menus.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[300px] text-center p-8 border rounded-lg bg-muted/10">
-            <h3 className="text-xl font-semibold mb-2">
-              No menu items available
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              This restaurant hasn't added any items to their menu yet.
-            </p>
-            <Button variant="outline" onClick={() => navigate("/customer")}>
-              Browse Other Restaurants
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {menus.map((menu) => (
-              <Card
-                key={menu.menu_id}
-                className="flex flex-col h-full transition-all hover:shadow-md"
-              >
-                <div className="aspect-video w-full overflow-hidden rounded-t-lg">
-                  <img
-                    src={
-                      menu.image
-                        ? `data:image/png;base64,${menu.image}`
-                        : "/placeholder.svg?height=200&width=400"
-                    }
-                    alt={menu.name}
-                    className="h-full w-full object-cover transition-transform hover:scale-105"
-                  />
-                </div>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{menu.name}</CardTitle>
-                    <Badge variant="secondary" className="font-medium">
-                      ${menu.price.toFixed(2)}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pb-2 flex-grow">
-                  <CardDescription className="line-clamp-2 mb-2">
-                    {menu.description}
-                  </CardDescription>
-                  <div className="flex items-center mt-2">
-                    <Badge
-                      variant={
-                        menu.available_quantity > 0 ? "outline" : "destructive"
-                      }
-                      className="text-xs"
-                    >
-                      {menu.available_quantity > 0
-                        ? `${menu.available_quantity} available`
-                        : "Out of stock"}
-                    </Badge>
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-2">
-                  {/* <Button
-                    className="w-full"
-                    size="sm"
-                    disabled={menu.available_quantity <= 0}
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Order
-                  </Button> */}
-                </CardFooter>
-              </Card>
+  const handleConfirmQuantity = async () => {
+    if (!user?.user_id) {
+      console.error("User not logged in!");
+      return;
+    }
+
+    if (!selectedMenu) return;
+
+    try {
+      const orderId = `order_${Date.now()}`;
+      console.log("Creating order...");
+
+      await invoke("create_order", {
+        payload: {
+          order_id: orderId,
+          customer_id: user.user_id,
+          item_type: "restaurant",
+          item_id: selectedMenu.menu_id,
+          quantity: quantity,
+          is_paid: false,
+        } as CreateOrderPayload,
+      });
+
+      console.log("Order created successfully!");
+
+      setIsQuantityModalOpen(false);
+      setIsSuccessModalOpen(true);
+
+      setTimeout(() => {
+        setIsSuccessModalOpen(false);
+        setSelectedMenu(null);
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to create order:", error);
+    }
+  };
+
+  return (
+    <section id="souvenirs" className="scroll-mt-16">
+      <BackHeader pageType="restaurant" />
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array(6)
+            .fill(0)
+            .map((_, index) => (
+              <SkeletonLoading key={index} />
             ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {menus.map((menu) => (
+            <Card key={menu.menu_id} className="overflow-hidden">
+              <div className="aspect-video w-full overflow-hidden rounded-t-lg">
+                <img
+                  src={
+                    menu.image
+                      ? `data:image/png;base64,${menu.image}`
+                      : "/placeholder.svg?height=200&width=400"
+                  }
+                  alt={menu.name}
+                  className="h-full w-full object-cover transition-transform hover:scale-105"
+                />
+              </div>
+              <CardHeader>
+                <CardTitle>{menu.name}</CardTitle>
+                <Badge>${menu.price.toFixed(2)}</Badge>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>{menu.description}</CardDescription>
+                <Badge className="mt-3">
+                  {menu.available_quantity > 0
+                    ? `${menu.available_quantity} available`
+                    : "Out of stock"}
+                </Badge>
+              </CardContent>
+              <CardFooter>
+                {user && user.role === "Customer" && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled={menu.available_quantity <= 0}
+                    onClick={() => handleAddToCart(menu)}
+                  >
+                    Add to Cart
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={isQuantityModalOpen} onOpenChange={setIsQuantityModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add to Cart</DialogTitle>
+            <DialogDescription>
+              Select the quantity you would like to purchase
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="flex justify-between items-center">
+              <span>Quantity:</span>
+              <div className="flex items-center">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="w-12 text-center">{quantity}</span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setQuantity((q) => q + 1)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
-    </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsQuantityModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmQuantity}>Add to Cart</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isSuccessModalOpen} onOpenChange={setIsSuccessModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <div className="py-6 flex flex-col items-center justify-center">
+            <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+              <Check className="h-8 w-8 text-green-600" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Added to Cart!</h2>
+            {selectedMenu && (
+              <p className="text-center text-muted-foreground">
+                {quantity} x {selectedMenu.name} has been added to your cart
+              </p>
+            )}
+            <div className="flex gap-4 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setIsSuccessModalOpen(false)}
+              >
+                Continue Shopping
+              </Button>
+              <Button onClick={() => navigate("/restaurant/order")}>
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                View Cart
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </section>
   );
 }

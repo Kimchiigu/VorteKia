@@ -10,17 +10,17 @@ use base64::encode;
 
 use crate::{ApiResponse, cache_get, cache_set, cache_delete, AppState};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct RideResponse {
     ride_id: String,
     name: String,
+    price: f64,
     description: String,
     location: String,
     status: String,
     capacity: i32,
     maintenance_status: String,
     image: String,
-    queue_count: u64,
 }
 
 #[tauri::command]
@@ -35,13 +35,13 @@ pub async fn view_all_rides(
             .map(|r| RideResponse {
                 ride_id: r.ride_id.clone(),
                 name: r.name,
+                price: r.price,
                 description: r.description,
                 location: r.location,
                 status: r.status,
                 capacity: r.capacity,
                 maintenance_status: r.maintenance_status,
                 image: encode(&r.image),
-                queue_count: 0,
             })
             .collect();
 
@@ -61,13 +61,13 @@ pub async fn view_all_rides(
         ride_responses.push(RideResponse {
             ride_id: ride.ride_id,
             name: ride.name,
+            price: ride.price,
             description: ride.description,
             location: ride.location,
             status: ride.status,
             capacity: ride.capacity,
             maintenance_status: ride.maintenance_status,
             image: encode(&ride.image),
-            queue_count,
         });
     }
 
@@ -75,10 +75,45 @@ pub async fn view_all_rides(
     Ok(ApiResponse::success(ride_responses))
 }
 
+#[tauri::command]
+pub async fn view_ride(
+    state: State<'_, AppState>,
+    ride_id: String
+) -> Result<ApiResponse<RideResponse>, String> {
+    let cache_key = format!("ride_{}", ride_id);
+
+    if let Some(cached_ride) = cache_get::<RideResponse>(&state.redis_pool, &cache_key).await {
+        return Ok(ApiResponse::success(cached_ride));
+    }
+
+    match Ride::find_by_id(ride_id.clone()).one(&state.db).await {
+        Ok(Some(ride)) => {
+            let formatted_ride = RideResponse {
+                ride_id: ride.ride_id,
+                name: ride.name,
+                price: ride.price,
+                description: ride.description,
+                location: ride.location,
+                status: ride.status,
+                capacity: ride.capacity,
+                maintenance_status: ride.maintenance_status,
+                image: encode(&ride.image)
+            };
+
+            cache_set(&state.redis_pool, &cache_key, &formatted_ride, 60).await;
+
+            Ok(ApiResponse::success(formatted_ride))
+        }
+        Ok(None) => Ok(ApiResponse::error("ride not found".to_string())),
+        Err(err) => Ok(ApiResponse::error(format!("Database error: {}", err))),
+    }
+}
+
 #[derive(Deserialize)]
 pub struct CreateRideRequest {
     pub ride_id: String,
     pub name: String,
+    pub price: f64,
     pub image: Vec<u8>,
     pub description: String,
     pub location: String,
@@ -95,6 +130,7 @@ pub async fn create_ride(
     let new_ride = RideActiveModel {
         ride_id: Set(payload.ride_id),
         name: Set(payload.name),
+        price: Set(payload.price),
         image: Set(payload.image),
         description: Set(payload.description),
         location: Set(payload.location),
@@ -117,6 +153,7 @@ pub async fn create_ride(
 pub struct UpdateRideRequest {
     pub ride_id: String,
     pub name: String,
+    pub price: f64,
     pub image: Vec<u8>,
     pub description: String,
     pub location: String,
@@ -134,6 +171,7 @@ pub async fn update_ride(
         Ok(Some(existing_ride)) => {
             let mut active_ride: RideActiveModel = existing_ride.into();
             active_ride.name = Set(payload.name);
+            active_ride.price = Set(payload.price);
             active_ride.image = Set(payload.image);
             active_ride.description = Set(payload.description);
             active_ride.location = Set(payload.location);

@@ -9,7 +9,7 @@ export default function RideHome() {
       <div className="container mx-auto px-4 py-8">
         <HeroRide />
         <div className="mt-12 space-y-16">
-          <RidesSection />
+          <RidesSection pageType="ride" />
         </div>
       </div>
     </main>

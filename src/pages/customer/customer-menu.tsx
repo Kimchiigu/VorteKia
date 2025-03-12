@@ -1,5 +1,5 @@
 import { Navbar } from "@/components/navbar/navbar";
-import { MenuSection } from "@/components/restaurant/menu-section";
+import { MenuCustomerSection } from "@/components/restaurant/menu-customer";
 
 export default function CustomerMenu() {
   return (
@@ -7,7 +7,7 @@ export default function CustomerMenu() {
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="mt-12 space-y-16">
-          <MenuSection />
+          <MenuCustomerSection />
         </div>
       </div>
     </main>

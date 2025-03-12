@@ -34,12 +34,14 @@ interface Restaurant {
   image?: string;
 }
 
-export function RestaurantsSection() {
+export function RestaurantsSection({ pageType }: OrderSectionProps) {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [cuisineFilter, setCuisineFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  console.log("Current Page : ", pageType);
 
   useEffect(() => {
     async function fetchRestaurants() {
@@ -172,7 +174,7 @@ export function RestaurantsSection() {
                     variant="outline"
                     className="w-full"
                     onClick={() =>
-                      navigate(`/customer/${restaurant.restaurant_id}`)
+                      navigate(`/${pageType}/${restaurant.restaurant_id}`)
                     }
                   >
                     View Menu

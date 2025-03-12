@@ -13,6 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Search } from "lucide-react";
 import SkeletonLoading from "../loader/skeleton";
+import { Button } from "../ui/button";
+import { useNavigate } from "react-router";
+import { useAuth } from "../provider/auth-provider";
 
 interface Ride {
   ride_id: number;
@@ -25,10 +28,12 @@ interface Ride {
   image?: string;
 }
 
-export function RidesSection() {
+export function RidesSection({ pageType }: RideSectionProps) {
   const [rides, setRides] = useState<Ride[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const user = useAuth();
 
   useEffect(() => {
     async function fetchRides() {
@@ -129,7 +134,7 @@ export function RidesSection() {
                     </div> */}
                   </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="flex flex-col">
                   <div className="w-full">
                     <div className="flex justify-between text-sm mb-1">
                       <span>
@@ -140,6 +145,15 @@ export function RidesSection() {
                       value={(ride.queue_count / ride.capacity) * 100}
                     />
                   </div>
+                  {pageType === "ride" && user.user && (
+                    <Button
+                      variant="outline"
+                      className="w-full mt-5"
+                      onClick={() => navigate(`/${pageType}/${ride.ride_id}`)}
+                    >
+                      Queue Ride
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             ))}

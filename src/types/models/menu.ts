@@ -1,9 +1,9 @@
 interface Menu {
-  menu_id: number;
-  restaurant_id: number;
+  menu_id: string;
   name: string;
   description: string;
   price: number;
   available_quantity: number;
-  image: string;
+  image?: string;
+  restaurant_id: string;
 }

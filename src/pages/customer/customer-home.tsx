@@ -10,8 +10,8 @@ export default function CustomerHome() {
       <div className="container mx-auto px-4 py-8">
         <HeroCustomer />
         <div className="mt-12 space-y-16">
-          <RestaurantsSection />
-          <RidesSection />
+          <RestaurantsSection pageType="customer" />
+          <RidesSection pageType="customer" />
         </div>
       </div>
     </main>

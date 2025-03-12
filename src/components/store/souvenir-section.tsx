@@ -11,7 +11,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Minus, Plus, Check, ShoppingBag } from "lucide-react";
+import { Minus, Plus, Check, ShoppingBag } from "lucide-react";
 import SkeletonLoading from "../loader/skeleton";
 import { useAuth } from "@/components/provider/auth-provider";
 import {
@@ -22,8 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import BackHeader from "../util/back-header";
 
-// Define Souvenir type
 interface Souvenir {
   souvenir_id: string;
   name: string;
@@ -34,7 +34,6 @@ interface Souvenir {
   store_id: string;
 }
 
-// Define Order payload type
 interface CreateOrderPayload {
   order_id: string;
   customer_id: string;
@@ -83,14 +82,12 @@ export default function SouvenirSection() {
     fetchSouvenirs();
   }, [store_id]);
 
-  // Handle opening the quantity modal
   const handleAddToCart = (souvenir: Souvenir) => {
     setSelectedSouvenir(souvenir);
-    setQuantity(1); // Reset quantity
+    setQuantity(1);
     setIsQuantityModalOpen(true);
   };
 
-  // Handle confirming the quantity & creating an order
   const handleConfirmQuantity = async () => {
     if (!user?.user_id) {
       console.error("User not logged in!");
@@ -100,11 +97,9 @@ export default function SouvenirSection() {
     if (!selectedSouvenir) return;
 
     try {
-      // Generate unique order_id
       const orderId = `order_${Date.now()}`;
       console.log("Creating order...");
 
-      // Call backend to create order
       await invoke("create_order", {
         payload: {
           order_id: orderId,
@@ -112,17 +107,15 @@ export default function SouvenirSection() {
           item_type: "store",
           item_id: selectedSouvenir.souvenir_id,
           quantity: quantity,
-          is_paid: false, // Default: not paid yet
+          is_paid: false,
         } as CreateOrderPayload,
       });
 
       console.log("Order created successfully!");
 
-      // Show success modal
       setIsQuantityModalOpen(false);
       setIsSuccessModalOpen(true);
 
-      // Auto-close success modal after 2 seconds
       setTimeout(() => {
         setIsSuccessModalOpen(false);
         setSelectedSouvenir(null);
@@ -134,24 +127,7 @@ export default function SouvenirSection() {
 
   return (
     <section id="souvenirs" className="scroll-mt-16">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2 w-fit"
-          onClick={() => navigate("/store")}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Stores
-        </Button>
-
-        <div className="flex flex-col">
-          <h2 className="text-3xl font-bold tracking-tight">Souvenirs</h2>
-          <p className="text-muted-foreground mt-2">
-            Find your favorite souvenirs from our stores
-          </p>
-        </div>
-      </div>
+      <BackHeader pageType="store" />
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

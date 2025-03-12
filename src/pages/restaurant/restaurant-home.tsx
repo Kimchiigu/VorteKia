@@ -14,7 +14,7 @@ export default function RestaurantHome() {
         <HeroRestaurant />
         <div className="mt-12 space-y-16">
           {user && <CartSection pageType="restaurant" />}
-          <RestaurantsSection />
+          <RestaurantsSection pageType="restaurant" />
         </div>
       </div>
     </main>

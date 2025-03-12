@@ -8,8 +8,8 @@ use std::env;
 use tauri::Manager;
 
 use controllers::restaurant_handler::{view_all_restaurants, create_restaurant, delete_restaurant, update_restaurant};
-use controllers::ride_handler::{view_all_rides, create_ride, update_ride, delete_ride};
-use controllers::menu_handler::{view_all_menus, create_menu, update_menu, delete_menu};
+use controllers::ride_handler::{view_all_rides, view_ride, create_ride, update_ride, delete_ride};
+use controllers::menu_handler::{view_all_menus, view_menu, create_menu, update_menu, delete_menu};
 use controllers::queue_handler::{view_all_queues, create_queue, delete_queue, get_queues_by_ride};
 use controllers::user_handler::{login_user, get_balance, top_up_balance, get_notifications};
 use controllers::notification_handler::{view_notification, mark_all_notifications_read};
@@ -151,10 +151,12 @@ pub fn run() {
             update_restaurant,
             delete_restaurant,
             view_all_menus,
+            view_menu,
             create_menu,
             update_menu,
             delete_menu,
             view_all_rides,
+            view_ride,
             create_ride,
             update_ride,
             delete_ride,

@@ -7,7 +7,7 @@ use serde::Serialize;
 use tauri::State;
 use crate::{ApiResponse, cache_get, cache_set, cache_delete, AppState};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct MenuResponse {
     pub menu_id: String,
     pub restaurant_id: String,
@@ -73,6 +73,37 @@ pub async fn view_all_menus(
     }
 }
 
+#[tauri::command]
+pub async fn view_menu(
+    state: State<'_, AppState>,
+    menu_id: String
+) -> Result<ApiResponse<MenuResponse>, String> {
+    let cache_key = format!("menu_{}", menu_id);
+
+    if let Some(cached_menu) = cache_get::<MenuResponse>(&state.redis_pool, &cache_key).await {
+        return Ok(ApiResponse::success(cached_menu));
+    }
+
+    match Menu::find_by_id(menu_id.clone()).one(&state.db).await {
+        Ok(Some(menu)) => {
+            let formatted_menu = MenuResponse {
+                menu_id: menu.menu_id,
+                restaurant_id: menu.restaurant_id,
+                name: menu.name,
+                description: menu.description,
+                price: menu.price,
+                available_quantity: menu.available_quantity,
+                image: encode(&menu.image),
+            };
+
+            cache_set(&state.redis_pool, &cache_key, &formatted_menu, 60).await;
+
+            Ok(ApiResponse::success(formatted_menu))
+        }
+        Ok(None) => Ok(ApiResponse::error("Menu not found".to_string())),
+        Err(err) => Ok(ApiResponse::error(format!("Database error: {}", err))),
+    }
+}
 
 #[derive(Deserialize)]
 pub struct CreateMenuRequest {

@@ -1,5 +1,5 @@
 import { Navbar } from "@/components/navbar/navbar";
-import { MenuSection } from "@/components/restaurant/menu-section";
+import MenuSection from "@/components/restaurant/menu-section";
 
 export default function RestaurantItem() {
   return (
