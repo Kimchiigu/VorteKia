@@ -10,7 +10,7 @@ export function HeroStaff() {
           </span>
         </h1>
         <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-8">
-          Staff UI - Experience the best of VorteKia
+          Staff UI - Make the Best of VorteKia
         </p>
       </div>
     </div>

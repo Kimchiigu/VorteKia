@@ -1,5 +1,4 @@
 import { Navbar } from "@/components/navbar/navbar";
-import { RidesSection } from "@/components/ride/rides-section";
 import { HeroStaff } from "@/components/staff/hero-staff";
 
 export default function StaffHome() {
@@ -9,7 +8,7 @@ export default function StaffHome() {
       <div className="container mx-auto px-4 py-8">
         <HeroStaff />
         <div className="mt-12 space-y-16">
-          <RidesSection />
+        {/*    Soon to be added    */}
         </div>
       </div>
     </main>

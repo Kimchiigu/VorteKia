@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, User } from "lucide-react";
+import {Key, Lock, User} from "lucide-react";
 
 export default function StaffLogin() {
   return (
@@ -34,6 +34,18 @@ export default function StaffLogin() {
                       id="username"
                       placeholder="Enter your unique ID"
                       className="pl-9"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        id="password"
+                        placeholder="Enter your password"
+                        type="password"
+                        className="pl-9"
                     />
                   </div>
                 </div>
