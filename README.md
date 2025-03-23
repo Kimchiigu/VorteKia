@@ -82,7 +82,7 @@ Make sure these tools are installed:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/vortekia.git
+git clone https://github.com/Kimchiigu/VorteKia.git
 cd vortekia
 ```
 
@@ -92,7 +92,23 @@ cd vortekia
 npm install
 ```
 
-### 3. Run the App in Dev Mode
+### 3. Copy `.env.example` to `.env` (Create new `.env` file)
+
+Fill the blanks with your API Key and PostgreSQL Connections
+
+```bash
+DATABASE_URL=protocol://username:password@host/database
+REDIS_URL=redis://127.0.0.1:6379
+FIREBASE_API_KEY=
+FIREBASE_AUTH_DOMAIN=
+FIREBASE_PROJECT_ID=
+FIREBASE_STORAGE_BUCKET=
+FIREBASE_MESSAGING_SENDER_ID=
+FIREBASE_APP_ID=
+FIREBASE_MEASUREMENT_ID=
+```
+
+### 4. Run the App in Dev Mode
 
 ```bash
 npm run tauri dev
