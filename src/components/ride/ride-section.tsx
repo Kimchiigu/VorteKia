@@ -1,5 +1,3 @@
-"use client";
-
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -13,7 +11,16 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Minus, Plus, Check, Clock, Users, CalendarDays } from "lucide-react";
+import {
+  Minus,
+  Plus,
+  Check,
+  Clock,
+  Users,
+  CalendarDays,
+  MapPin,
+  ShoppingBag,
+} from "lucide-react";
 import SkeletonLoading from "../loader/skeleton";
 import { useAuth } from "@/components/provider/auth-provider";
 import {
@@ -31,12 +38,11 @@ interface Ride {
   name: string;
   description: string;
   price: number;
-  duration: number;
   capacity: number;
-  min_height: number;
-  thrill_level: string;
+  location: string;
+  status: string;
+  maintenance_status: string;
   image?: string;
-  is_operational: boolean;
 }
 
 interface CreateOrderPayload {
@@ -146,15 +152,15 @@ export default function RideSection() {
                 <div>
                   <CardTitle className="text-2xl">{ride.name}</CardTitle>
                   <Badge
-                    variant={ride.is_operational ? "default" : "destructive"}
+                    variant={
+                      ride.status === "Operational" ? "default" : "destructive"
+                    }
                     className="mt-2"
                   >
-                    {ride.is_operational ? "Operational" : "Closed"}
+                    {ride.status}
                   </Badge>
                 </div>
-                <Badge className="text-lg">
-                  ${ride.price ? ride.price : 100.99}
-                </Badge>
+                <Badge className="text-lg">${ride.price.toFixed(2)}</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -167,12 +173,10 @@ export default function RideSection() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-muted-foreground" />
+                  <MapPin className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Duration</p>
-                    <p className="font-medium">
-                      {ride.duration ? ride.duration : 60} minutes
-                    </p>
+                    <p className="text-sm text-muted-foreground">Location</p>
+                    <p className="font-medium">{ride.location}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -182,31 +186,16 @@ export default function RideSection() {
                     <p className="font-medium">{ride.capacity} people</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Thrill Level
-                    </p>
-                    <p className="font-medium">
-                      {ride.thrill_level ? ride.thrill_level : "Extreme"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Requirements</h3>
-                <p>
-                  Minimum height: {ride.min_height ? ride.min_height : 100} cm
-                </p>
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-4 pt-2">
               {user && user.role === "Customer" && (
                 <Button
                   className="w-full md:w-auto"
-                  disabled={!ride.is_operational}
+                  disabled={
+                    ride.maintenance_status === "Pending" ||
+                    ride.maintenance_status === "In Progress"
+                  }
                   onClick={handleBookRide}
                 >
                   Book This Ride
@@ -233,43 +222,9 @@ export default function RideSection() {
           <DialogHeader>
             <DialogTitle>Book Ride</DialogTitle>
             <DialogDescription>
-              How many tickets would you like to purchase?
+              Are you sure you want to book this ride?
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="flex justify-between items-center">
-              <span>Number of tickets:</span>
-              <div className="flex items-center">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-12 text-center">{quantity}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity((q) => q + 1)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            {ride && (
-              <div className="mt-4 p-3 bg-muted rounded-md">
-                <div className="flex justify-between">
-                  <span>Price per ticket:</span>
-                  <span>${ride.price ? ride.price : 100}</span>
-                </div>
-                <div className="flex justify-between font-bold mt-2 pt-2 border-t border-border">
-                  <span>Total:</span>
-                  <span>${(ride.price * quantity).toFixed(2)}</span>
-                </div>
-              </div>
-            )}
-          </div>
           <DialogFooter>
             <Button
               variant="outline"
@@ -282,18 +237,16 @@ export default function RideSection() {
         </DialogContent>
       </Dialog>
 
-      {/* Success Modal */}
       <Dialog open={isSuccessModalOpen} onOpenChange={setIsSuccessModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <div className="py-6 flex flex-col items-center justify-center">
             <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
               <Check className="h-8 w-8 text-green-600" />
             </div>
-            <h2 className="text-xl font-bold mb-2">Booking Confirmed!</h2>
+            <h2 className="text-xl font-bold mb-2">Added to Cart!</h2>
             {ride && (
               <p className="text-center text-muted-foreground">
-                {quantity} {quantity === 1 ? "ticket" : "tickets"} for{" "}
-                {ride.name} has been added to your cart
+                You have queue a ride for {ride.name}
               </p>
             )}
             <div className="flex gap-4 mt-6">
@@ -303,7 +256,10 @@ export default function RideSection() {
               >
                 Continue Browsing
               </Button>
-              <Button onClick={() => navigate("/ride/order")}>View Cart</Button>
+              <Button onClick={() => navigate("/ride/order")}>
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                View Cart
+              </Button>
             </div>
           </div>
         </DialogContent>
