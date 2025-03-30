@@ -56,6 +56,48 @@ pub async fn login_user(
     }
 }
 
+#[tauri::command]
+pub async fn staff_login(
+    state: State<'_, AppState>,
+    user_id: String,
+    password: String
+) -> Result<ApiResponse<UserResponse>, String> {
+    let cache_key = format!("user_{}", user_id);
+
+    match User::find()
+        .filter(user::Column::UserId.eq(&user_id))
+        .one(&state.db)
+        .await
+    {
+        Ok(Some(user)) => {
+            if user.role == "Customer" {
+                return Ok(ApiResponse::error("User is not authorized as staff".to_string()));
+            }
+
+            if let Some(stored_password) = &user.password {
+                if stored_password == &password {
+                    let response = UserResponse {
+                        user_id: user.user_id.clone(),
+                        name: user.name.clone(),
+                        email: user.email.clone(),
+                        role: user.role.clone(),
+                        balance: user.balance,
+                        restaurant_id: user.restaurant_id.clone(),
+                    };
+                    cache_set(&state.redis_pool, &cache_key, &user, 3600).await;
+                    Ok(ApiResponse::success(response))
+                } else {
+                    Ok(ApiResponse::error("Invalid password".to_string()))
+                }
+            } else {
+                Ok(ApiResponse::error("Password is required for staff login".to_string()))
+            }
+        }
+        Ok(None) => Ok(ApiResponse::error("User not found".to_string())),
+        Err(err) => Ok(ApiResponse::error(format!("Database error: {}", err))),
+    }
+}
+
 #[derive(Deserialize)]
 pub struct TopUpRequest {
     pub user_id: String,

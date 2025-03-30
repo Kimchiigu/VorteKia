@@ -8,7 +8,6 @@ import { NotificationCenter } from "../customer/notification-center";
 import { Menu, X } from "lucide-react";
 import { ModeToggle } from "../theme/mode-toggle";
 import { useNavigate } from "react-router";
-import { StaffNav } from "./staff-nav";
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -31,7 +30,7 @@ export function Navbar() {
           {user ? (
             <>
               <NotificationCenter />
-              {user.role === "Customer" ? <UserNav /> : <StaffNav />}
+              <UserNav />
             </>
           ) : (
             <LoginDialog />

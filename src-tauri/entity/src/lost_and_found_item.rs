@@ -9,10 +9,12 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub item_id: String,
     pub name: String,
+    #[sea_orm(column_type = "VarBinary(StringLen::None)")]
+    pub image: Vec<u8>,
     pub r#type: String,
     pub color: String,
     pub location: String,
-    pub finder_id: String,
+    pub finder_id: Option<String>,
     pub owner_id: Option<String>,
     pub status: String,
 }

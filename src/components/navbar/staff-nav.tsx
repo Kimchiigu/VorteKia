@@ -1,55 +1,49 @@
-import { useAuth } from "@/components/provider/auth-provider";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { CreditCard, LogOut } from "lucide-react";
-import { useState, useEffect } from "react";
+import { LoginDialog } from "../customer/login-dialog";
+import { useAuth } from "@/components/provider/auth-provider";
+import { UserNav } from "./user-nav";
 
-export function StaffNav() {
-  const { user, logout, fetchBalance, fetchNotifications } = useAuth();
+import { NotificationCenter } from "../customer/notification-center";
+import { Menu, X } from "lucide-react";
+import { ModeToggle } from "../theme/mode-toggle";
+import { useNavigate } from "react-router";
 
-  useEffect(() => {
-    fetchBalance();
-    fetchNotifications();
-  }, [user?.user_id]);
-
-  if (!user) return null;
+export function StaffNavbar() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback>
-                {user.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-16 items-center justify-between px-4">
+        <div className="flex items-center">
+          <button onClick={() => navigate("/")}>
+            <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-transparent bg-clip-text">
+              VorteKia
+            </span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <ModeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount>
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{user.name}</p>
-              <p className="text-xs leading-none text-muted-foreground">
-                Balance: ${user.balance.toFixed(2)}
-              </p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuItem onClick={logout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {mobileMenuOpen && <div className="md:hidden border-t"></div>}
+    </header>
   );
 }

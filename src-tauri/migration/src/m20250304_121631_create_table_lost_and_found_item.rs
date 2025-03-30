@@ -13,10 +13,11 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(ColumnDef::new(LostAndFoundItem::ItemID).string().not_null().primary_key())
                     .col(ColumnDef::new(LostAndFoundItem::Name).string().not_null())
+                    .col(ColumnDef::new(LostAndFoundItem::Image).binary().not_null())
                     .col(ColumnDef::new(LostAndFoundItem::Type).string().not_null())
                     .col(ColumnDef::new(LostAndFoundItem::Color).string().not_null())
                     .col(ColumnDef::new(LostAndFoundItem::Location).string().not_null())
-                    .col(ColumnDef::new(LostAndFoundItem::FinderID).string().not_null())
+                    .col(ColumnDef::new(LostAndFoundItem::FinderID).string().null())
                     .col(ColumnDef::new(LostAndFoundItem::OwnerID).string().null())
                     .col(ColumnDef::new(LostAndFoundItem::Status).string().not_null())
                     .foreign_key(
@@ -52,6 +53,7 @@ enum LostAndFoundItem {
     Table,
     ItemID,
     Name,
+    Image,
     Type,
     Color,
     Location,

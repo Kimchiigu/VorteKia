@@ -11,11 +11,12 @@ use controllers::restaurant_handler::{view_all_restaurants, create_restaurant, d
 use controllers::ride_handler::{view_all_rides, view_ride, create_ride, update_ride, delete_ride};
 use controllers::menu_handler::{view_all_menus, view_menu, create_menu, update_menu, delete_menu};
 use controllers::queue_handler::{view_all_queues, create_queue, delete_queue, get_queues_by_ride};
-use controllers::user_handler::{login_user, get_balance, top_up_balance, get_notifications};
+use controllers::user_handler::{login_user, staff_login, get_balance, top_up_balance, get_notifications};
 use controllers::notification_handler::{view_notification, mark_all_notifications_read};
 use controllers::store_handler::{view_all_stores, create_store, update_store, delete_store};
 use controllers::souvenir_handler::{view_all_souvenirs, view_souvenir};
 use controllers::order_handler::{view_all_orders, view_orders, create_order, update_order, delete_order};
+use controllers::lost_and_found_handler::{view_lost_and_found_items, create_lost_item, update_lost_item, delete_lost_item};
 
 struct AppState {
     db: DatabaseConnection,
@@ -165,6 +166,7 @@ pub fn run() {
             delete_queue,
             get_queues_by_ride,
             login_user,
+            staff_login,
             get_balance,
             top_up_balance,
             get_notifications,
@@ -181,6 +183,10 @@ pub fn run() {
             create_order,
             update_order,
             delete_order,
+            view_lost_and_found_items,
+            create_lost_item,
+            update_lost_item,
+            delete_lost_item,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
