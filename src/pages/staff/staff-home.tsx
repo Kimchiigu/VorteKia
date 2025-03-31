@@ -2,11 +2,24 @@ import { HeroStaff } from "@/components/staff/hero-staff";
 import LostAndFound from "./lost-and-found/lost-and-found";
 import { useLocation } from "react-router";
 import { StaffNavbar } from "@/components/navbar/staff-nav";
+import CustomerService from "./customer-service/customer-service";
+import RideManager from "./ride-manager/ride-manager";
+import RideStaff from "./ride-staff/ride-staff";
+import FNBSupervisor from "./fnb-supervisor/fnb-supervisor";
+import Chef from "./chef/chef";
+import Waiter from "./waiter/waiter";
+import MaintenanceManager from "./maintenance-manager/maintenance-manager";
+import MaintenanceStaff from "./maintenance-staff/maintenance-staff";
+import RetailManager from "./retail-manager/retail-manager";
+import SalesAssociate from "./sales-associate/sales-associate";
+import CEO from "./executives/ceo";
+import CFO from "./executives/cfo";
+import COO from "./executives/coo";
 
 export default function StaffHome() {
   const location = useLocation();
   const user = location.state?.user;
-  console.log("User Role :", user.role);
+  // console.log("User Role :", user.role);
 
   return (
     <main className="min-h-screen w-full bg-background">
@@ -19,7 +32,20 @@ export default function StaffHome() {
               <h2 className="text-xl font-semibold">
                 Welcome, {user.name} ({user.role})
               </h2>
+              {user.role === "Customer Service" && <CustomerService />}
               {user.role === "Lost And Found Staff" && <LostAndFound />}
+              {user.role === "Ride Manager" && <RideManager />}
+              {user.role === "Ride Staff" && <RideStaff />}
+              {user.role === "F&B Supervisor" && <FNBSupervisor />}
+              {user.role === "Chef" && <Chef />}
+              {user.role === "Waiter" && <Waiter />}
+              {user.role === "Maintenance Manager" && <MaintenanceManager />}
+              {user.role === "Maintenance Staff" && <MaintenanceStaff />}
+              {user.role === "Retail Manager" && <RetailManager />}
+              {user.role === "Sales Associate" && <SalesAssociate />}
+              {user.role === "CEO" && <CEO />}
+              {user.role === "CFO" && <CFO />}
+              {user.role === "COO" && <COO />}
             </>
           ) : (
             <p className="text-red-500">
