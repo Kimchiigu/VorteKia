@@ -1,7 +1,6 @@
 import { HeroStaff } from "@/components/staff/hero-staff";
 import LostAndFound from "./lost-and-found/lost-and-found";
 import { useLocation } from "react-router";
-import { StaffNavbar } from "@/components/navbar/staff-nav";
 import CustomerService from "./customer-service/customer-service";
 import RideManager from "./ride-manager/ride-manager";
 import RideStaff from "./ride-staff/ride-staff";
@@ -15,23 +14,24 @@ import SalesAssociate from "./sales-associate/sales-associate";
 import CEO from "./executives/ceo";
 import CFO from "./executives/cfo";
 import COO from "./executives/coo";
+import { NavbarStaff } from "@/components/staff/navbar-staff";
 
 export default function StaffHome() {
   const location = useLocation();
   const user = location.state?.user;
-  // console.log("User Role :", user.role);
+  console.log("User ID :", user.user_id);
 
   return (
     <main className="min-h-screen w-full bg-background">
-      <StaffNavbar />
+      <NavbarStaff userId={user.user_id} role={user.role} />
       <div className="container mx-auto px-4 py-8">
-        <HeroStaff />
+        <HeroStaff
+          name={user.name ? user.name : "Guest"}
+          role={user.role ? user.role : "Unknown"}
+        />
         <div className="mt-12 space-y-16">
           {user ? (
             <>
-              <h2 className="text-xl font-semibold">
-                Welcome, {user.name} ({user.role})
-              </h2>
               {user.role === "Customer Service" && <CustomerService />}
               {user.role === "Lost And Found Staff" && <LostAndFound />}
               {user.role === "Ride Manager" && <RideManager />}

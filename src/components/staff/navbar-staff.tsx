@@ -1,6 +1,5 @@
-"use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button";
 import { Menu, X, MessageCircle } from "lucide-react";
 import { ModeToggle } from "../theme/mode-toggle";
@@ -13,62 +12,79 @@ import {
 } from "@/components/ui/dialog";
 import {
   ChatInterface,
-  type Customer,
+  type GroupChat,
 } from "@/components/staff/customer-service/chat-interface";
 
-export function NavbarStaff() {
+interface NavbarStaffProps {
+  userId: string;
+  role: string;
+}
+
+export function NavbarStaff({ userId, role }: NavbarStaffProps) {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [groups, setGroups] = useState<GroupChat[]>([]);
 
-  // Mock data for chat interface
-  const mockCustomers: Customer[] = [
-    {
-      id: "CUST-001",
-      name: "John Doe",
-      email: "john.doe@example.com",
-      lastActive: new Date(),
-      status: "online",
-      unreadCount: 2,
-    },
-    {
-      id: "CUST-002",
-      name: "Jane Smith",
-      email: "jane.smith@example.com",
-      lastActive: new Date(Date.now() - 15 * 60000),
-      status: "away",
-      unreadCount: 0,
-    },
-    {
-      id: "CUST-003",
-      name: "Robert Johnson",
-      email: "robert.j@example.com",
-      lastActive: new Date(Date.now() - 45 * 60000),
-      status: "offline",
-      unreadCount: 0,
-    },
-    {
-      id: "CUST-004",
-      name: "Emily Wilson",
-      email: "emily.w@example.com",
-      lastActive: new Date(Date.now() - 5 * 60000),
-      status: "online",
-      unreadCount: 1,
-    },
-    {
-      id: "CUST-005",
-      name: "Michael Brown",
-      email: "michael.b@example.com",
-      lastActive: new Date(Date.now() - 120 * 60000),
-      status: "offline",
-      unreadCount: 0,
-    },
-  ];
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const groupIdsByRole: Record<string, string[]> = {
+          "Customer Service": ["GRP-CSS"],
+          "Lost And Found Staff": ["GRP-LFS"],
+          "Ride Manager": ["GRP-OPS"],
+          "Ride Staff": ["GRP-OPS"],
+          "F&B Supervisor": ["GRP-CSM"],
+          Chef: ["GRP-CSM"],
+          Waiter: ["GRP-CSM"],
+          "Maintenance Manager": ["GRP-CMD"],
+          "Maintenance Staff": ["GRP-CMD"],
+          "Retail Manager": ["GRP-MKT"],
+          "Sales Associate": ["GRP-MKT"],
+          CEO: ["GRP-EXC"],
+          CFO: ["GRP-EXC"],
+          COO: ["GRP-EXC"],
+        };
 
-  const handleSendMessage = (customerId: string, message: string) => {
-    console.log(`Sending message to ${customerId}: ${message}`);
-    // In a real app, this would send the message to the backend
+        const baseGroups = groupIdsByRole[role] ?? [];
+        const allowedGroups = [...new Set([...baseGroups, "GRP-STAFF"])];
+
+        const results: GroupChat[] = [];
+        for (const id of allowedGroups) {
+          const group = await invoke<any>("fetch_group_info", {
+            groupId: id,
+          });
+          results.push({
+            groupId: id,
+            groupName: group.name,
+            members: group.members,
+            lastMessage: "",
+            unreadCount: 0,
+          });
+        }
+
+        setGroups(results);
+      } catch (err) {
+        console.error("Failed to fetch groups:", err);
+      }
+    };
+
+    fetchGroups();
+  }, [role]);
+
+  const handleSendMessage = async (groupId: string, message: string) => {
+    try {
+      await invoke("send_group_message", {
+        groupId: groupId,
+        senderId: userId,
+        content: message,
+      });
+      console.log(`✅ Message sent to ${groupId}`);
+    } catch (error) {
+      console.error("❌ Failed to send message:", error);
+    }
   };
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -89,15 +105,10 @@ export function NavbarStaff() {
             className="relative"
           >
             <MessageCircle className="h-5 w-5" />
-            {mockCustomers.reduce(
-              (count, customer) => count + customer.unreadCount,
-              0
-            ) > 0 && (
+            {groups.reduce((count, group) => count + group.unreadCount, 0) >
+              0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {mockCustomers.reduce(
-                  (count, customer) => count + customer.unreadCount,
-                  0
-                )}
+                {groups.reduce((count, group) => count + group.unreadCount, 0)}
               </span>
             )}
           </Button>
@@ -117,19 +128,20 @@ export function NavbarStaff() {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {mobileMenuOpen && <div className="md:hidden border-t"></div>}
 
-      {/* Chat Dialog */}
+      {/* Group Chat Dialog */}
       <Dialog open={chatOpen} onOpenChange={setChatOpen}>
         <DialogContent className="max-w-5xl w-[90vw] h-[80vh] max-h-[800px]">
           <DialogHeader>
-            <DialogTitle>Staff Chat</DialogTitle>
+            <DialogTitle>Staff Group Chat - {role}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
             <ChatInterface
-              customers={mockCustomers}
+              mode="group"
+              groups={groups}
               onSendMessage={handleSendMessage}
+              userId={userId}
             />
           </div>
         </DialogContent>

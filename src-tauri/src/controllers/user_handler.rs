@@ -186,3 +186,49 @@ pub async fn get_notifications(
 ) -> Result<ApiResponse<Vec<notification_handler::NotificationResponse>>, String> {
     notification_handler::view_notification(state, user_id).await
 }
+
+#[tauri::command]
+pub async fn get_all_users(
+    state: State<'_, AppState>
+) -> Result<ApiResponse<Vec<UserResponse>>, String> {
+    match User::find().all(&state.db).await {
+        Ok(users) => {
+            let response: Vec<UserResponse> = users.into_iter().map(|user| UserResponse {
+                user_id: user.user_id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                balance: user.balance,
+                restaurant_id: user.restaurant_id,
+            }).collect();
+
+            Ok(ApiResponse::success(response))
+        }
+        Err(err) => Ok(ApiResponse::error(format!("Database error: {}", err))),
+    }
+}
+
+#[derive(Serialize)]
+pub struct UserLiteResponse {
+    pub user_id: String,
+    pub name: String,
+    pub role: String,
+}
+
+#[tauri::command]
+pub async fn get_all_users_lite(
+    state: State<'_, AppState>
+) -> Result<ApiResponse<Vec<UserLiteResponse>>, String> {
+    match User::find().all(&state.db).await {
+        Ok(users) => {
+            let response: Vec<UserLiteResponse> = users.into_iter().map(|user| UserLiteResponse {
+                user_id: user.user_id,
+                name: user.name,
+                role: user.role,
+            }).collect();
+
+            Ok(ApiResponse::success(response))
+        }
+        Err(err) => Ok(ApiResponse::error(format!("Database error: {}", err))),
+    }
+}

@@ -268,8 +268,9 @@ export default function CustomerService() {
 
           <TabsContent value="chat" className="mt-6">
             <ChatInterface
-              customers={customers}
-              onSendMessage={handleSendMessage}
+              mode="customer"
+              customers={initialCustomers}
+              onSendMessage={(id, msg) => console.log("Send to", id, msg)}
             />
           </TabsContent>
 

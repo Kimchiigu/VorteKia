@@ -47,7 +47,7 @@ impl MigrationTrait for Migration {
                         "COO-001".into(),"1985-12-05".into(), "COO".into(), 8000.00.into(), None::<String>.into(),
                     ])
                     .values_panic([ 
-                        "CFO-001".into(), "Alexander Jason".into(), "alexander.jason@vortekia.com".into(),
+                        "CFO-001".into(), "Harley Davidson".into(), "alexander.jason@vortekia.com".into(),
                         "CFO-001".into(),"1985-12-05".into(), "CFO".into(), 9000.00.into(), None::<String>.into(),
                     ])
                     // Customer (5 Users)
@@ -140,7 +140,7 @@ impl MigrationTrait for Migration {
                         "RIS-001".into(), "1988-07-19".into(), "Ride Staff".into(), 2000.00.into(), None::<String>.into(),
                     ])
                     .values_panic([ 
-                        "RIS-002".into(), "James Wong".into(), "james.wong001@vortekia.com".into(),
+                        "RIS-002".into(), "Alicia Wong".into(), "james.wong001@vortekia.com".into(),
                         "RIS-002".into(), "1988-07-19".into(), "Ride Staff".into(), 2000.00.into(), None::<String>.into(),
                     ])
                     .values_panic([ 
@@ -157,11 +157,11 @@ impl MigrationTrait for Migration {
                     ])
                     // F&B Supervisor (5 Users)
                     .values_panic([ 
-                        "FBS-001".into(), "James Wong".into(), "james.wong005@vortekia.com".into(),
+                        "FBS-001".into(), "Patricia Mintsy".into(), "james.wong005@vortekia.com".into(),
                         "FBS-001".into(), "1988-07-19".into(), "F&B Supervisor".into(), 2000.00.into(), None::<String>.into(),
                     ])
                     .values_panic([ 
-                        "FBS-002".into(), "James Wong".into(), "james.wong006@vortekia.com".into(),
+                        "FBS-002".into(), "Richard Anderson".into(), "james.wong006@vortekia.com".into(),
                         "FBS-002".into(), "1988-07-19".into(), "F&B Supervisor".into(), 2000.00.into(), None::<String>.into(),
                     ])
                     .values_panic([ 
@@ -178,11 +178,11 @@ impl MigrationTrait for Migration {
                     ])
                     // Chef (5 Users)
                     .values_panic([ 
-                        "CHF-001".into(), "James Wong".into(), "james.wong010@vortekia.com".into(),
+                        "CHF-001".into(), "Li Chen".into(), "james.wong010@vortekia.com".into(),
                         "CHF-001".into(), "1988-07-19".into(), "Chef".into(), 2000.00.into(), "RT001".into(),
                     ])
                     .values_panic([ 
-                        "CHF-002".into(), "James Wong".into(), "james.wong011@vortekia.com".into(),
+                        "CHF-002".into(), "Olivia Rodrigo".into(), "james.wong011@vortekia.com".into(),
                         "CHF-002".into(), "1988-07-19".into(), "Chef".into(), 2000.00.into(), "RT001".into(),
                     ])
                     .values_panic([ 
@@ -199,11 +199,11 @@ impl MigrationTrait for Migration {
                     ])
                     // Waiter (5 Users)
                     .values_panic([ 
-                        "WTR-001".into(), "James Wong".into(), "james.wong015@vortekia.com".into(),
+                        "WTR-001".into(), "Chandler Kho".into(), "james.wong015@vortekia.com".into(),
                         "WTR-001".into(), "1988-07-19".into(), "Waiter".into(), 2000.00.into(), "RT001".into(),
                     ])
                     .values_panic([ 
-                        "WTR-002".into(), "James Wong".into(), "james.wong016@vortekia.com".into(),
+                        "WTR-002".into(), "Viet Chen".into(), "james.wong016@vortekia.com".into(),
                         "WTR-002".into(), "1988-07-19".into(), "Waiter".into(), 2000.00.into(), "RT001".into(),
                     ])
                     .values_panic([ 
@@ -220,11 +220,11 @@ impl MigrationTrait for Migration {
                     ])
                     // Retail Manager (5 Users)
                     .values_panic([ 
-                        "REM-001".into(), "Christopher Gunawan".into(), "christopher.gunawan005@vortekia.com".into(),
+                        "REM-001".into(), "John Snuffy".into(), "christopher.gunawan005@vortekia.com".into(),
                         "REM-001".into(), "1992-09-23".into(), "Retail Manager".into(), 5000.00.into(), None::<String>.into(),
                     ])
                     .values_panic([ 
-                        "REM-002".into(), "Christopher Gunawan".into(), "christopher.gunawan006@vortekia.com".into(),
+                        "REM-002".into(), "Mark Robinson".into(), "christopher.gunawan006@vortekia.com".into(),
                         "REM-002".into(), "1992-09-23".into(), "Retail Manager".into(), 5000.00.into(), None::<String>.into(),
                     ])
                     .values_panic([ 
@@ -241,7 +241,7 @@ impl MigrationTrait for Migration {
                     ])
                     // Sales Associates (5 Users)
                     .values_panic([ 
-                        "SAS-001".into(), "Christopher Gunawan".into(), "christopher.gunawan010@vortekia.com".into(),
+                        "SAS-001".into(), "Matthew Jeremiah".into(), "christopher.gunawan010@vortekia.com".into(),
                         "SAS-001".into(), "1992-09-23".into(), "Sales Associate".into(), 5000.00.into(), None::<String>.into(),
                     ])
                     .values_panic([ 
@@ -262,11 +262,11 @@ impl MigrationTrait for Migration {
                     ])
                     // Maintenance Manager (5 Users)
                     .values_panic([ 
-                        "MAM-001".into(), "James Wong".into(), "james.wong020@vortekia.com".into(),
+                        "MAM-001".into(), "Walter White".into(), "james.wong020@vortekia.com".into(),
                         "MAM-001".into(), "1988-07-19".into(), "Maintenance Manager".into(), 2000.00.into(), None::<String>.into(),
                     ])
                     .values_panic([ 
-                        "MAM-002".into(), "James Wong".into(), "james.wong021@vortekia.com".into(),
+                        "MAM-002".into(), "Reed Knobs".into(), "james.wong021@vortekia.com".into(),
                         "MAM-002".into(), "1988-07-19".into(), "Maintenance Manager".into(), 2000.00.into(), None::<String>.into(),
                     ])
                     .values_panic([ 
@@ -283,7 +283,7 @@ impl MigrationTrait for Migration {
                     ])
                     // Maintenance Staff (5 Users)
                     .values_panic([ 
-                        "MAS-001".into(), "James Wong".into(), "james.wong025@vortekia.com".into(),
+                        "MAS-001".into(), "Keith Anderson".into(), "james.wong025@vortekia.com".into(),
                         "MAS-001".into(), "1988-07-19".into(), "Maintenance Staff".into(), 2000.00.into(), None::<String>.into(),
                     ])
                     .values_panic([ 

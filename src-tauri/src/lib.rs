@@ -5,22 +5,55 @@ use dotenv::dotenv;
 use sea_orm::{Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
 use std::env;
+use std::sync::Arc;
 use tauri::Manager;
+use tokio::sync::Mutex;
+use firestore::{FirestoreDb, FirestoreDbOptions};
+use tokio::task::JoinHandle;
 
 use controllers::restaurant_handler::{view_all_restaurants, create_restaurant, delete_restaurant, update_restaurant};
 use controllers::ride_handler::{view_all_rides, view_ride, create_ride, update_ride, delete_ride};
 use controllers::menu_handler::{view_all_menus, view_menu, create_menu, update_menu, delete_menu};
 use controllers::queue_handler::{view_all_queues, create_queue, delete_queue, get_queues_by_ride};
-use controllers::user_handler::{login_user, staff_login, get_balance, top_up_balance, get_notifications};
+use controllers::user_handler::{get_all_users, get_all_users_lite, login_user, staff_login, get_balance, top_up_balance, get_notifications};
 use controllers::notification_handler::{view_notification, mark_all_notifications_read};
 use controllers::store_handler::{view_all_stores, create_store, update_store, delete_store};
 use controllers::souvenir_handler::{view_all_souvenirs, view_souvenir};
 use controllers::order_handler::{view_all_orders, view_orders, create_order, update_order, delete_order};
 use controllers::lost_and_found_handler::{view_lost_and_found_items, create_lost_item, update_lost_item, delete_lost_item};
+use controllers::chat_handler::{send_group_message, fetch_group_info, get_all_groups, listen_to_group_chat, fetch_group_chat_messages};
 
-struct AppState {
-    db: DatabaseConnection,
-    redis_pool: RedisPool,
+pub struct AppState {
+    pub db: DatabaseConnection,
+    pub redis_pool: RedisPool,
+    pub firestore: Arc<Mutex<Option<FirestoreDb>>>,
+    pub listener: Arc<Mutex<Option<JoinHandle<()>>>>,
+}
+
+async fn init_firestore() -> Result<FirestoreDb, String> {
+    let project_id = "vortekia-firebase".to_string();
+    let raw_path = env::var("FIRESTORE_CREDENTIALS_PATH").map_err(|e| e.to_string())?;
+
+    let path = std::env::current_dir()
+        .map_err(|e| e.to_string())?
+        .join(raw_path);
+
+    if !path.exists() {
+        return Err(format!("Firestore credentials not found at {}", path.display()));
+    }
+
+    FirestoreDb::with_options_service_account_key_file(
+        FirestoreDbOptions::new(project_id),
+        path.into(),
+    )
+    .await
+    .map_err(|e| format!("Firestore init error: {:?}", e))
+}
+
+async fn init_redis() -> Result<RedisPool, String> {
+    let redis_url = env::var("REDIS_URL").map_err(|e| e.to_string())?;
+    let redis_cfg = RedisConfig::from_url(redis_url);
+    redis_cfg.create_pool(Some(Runtime::Tokio1)).map_err(|e| e.to_string())
 }
 
 #[derive(Serialize)]
@@ -32,17 +65,11 @@ pub enum ApiResponse<T: Serialize> {
 
 impl<T: Serialize> ApiResponse<T> {
     fn success(data: T) -> Self {
-        ApiResponse::Success {
-            data,
-            message: None,
-        }
+        ApiResponse::Success { data, message: None }
     }
 
     fn error(message: String) -> Self {
-        ApiResponse::Error {
-            data: None,
-            message,
-        }
+        ApiResponse::Error { data: None, message }
     }
 }
 
@@ -122,30 +149,37 @@ async fn cache_get<T: for<'de> Deserialize<'de>>(pool: &RedisPool, key: &str) ->
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
+pub async fn run() {
+    dotenv().ok();
+
+    // Initialize DB
+    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let db = Database::connect(&db_url)
+        .await
+        .expect("Failed to connect to DB");
+
+    // Initialize Redis
+    let redis_pool = init_redis().await.expect("Failed to initialize Redis");
+
+    // Initialize Firestore
+    let firestore = init_firestore()
+        .await
+        .expect("Failed to initialize Firestore");
+
+    // Arc-wrapped AppState
+    let app_state = AppState {
+        db,
+        redis_pool,
+        firestore: Arc::new(Mutex::new(Some(firestore))),
+        listener: Arc::new(Mutex::new(None)),
+    };
+
     tauri::Builder::default()
-        .setup(|app| {
-            dotenv().ok();
-
-            let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-            let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
-
-            let rt = tokio::runtime::Runtime::new().unwrap();
-
-            let db = rt
-                .block_on(Database::connect(&database_url))
-                .expect("Failed to connect to database");
-
-            let redis_cfg = RedisConfig::from_url(redis_url);
-            let redis_pool = redis_cfg
-                .create_pool(Some(Runtime::Tokio1))
-                .expect("Failed to create Redis pool");
-
-            app.manage(AppState { db, redis_pool });
-
+        .plugin(tauri_plugin_opener::init())
+        .setup(move |app| {
+            app.manage(app_state);
             Ok(())
         })
-        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             view_all_restaurants,
             create_restaurant,
@@ -165,6 +199,8 @@ pub fn run() {
             create_queue,
             delete_queue,
             get_queues_by_ride,
+            get_all_users,
+            get_all_users_lite,
             login_user,
             staff_login,
             get_balance,
@@ -187,6 +223,11 @@ pub fn run() {
             create_lost_item,
             update_lost_item,
             delete_lost_item,
+            send_group_message,
+            fetch_group_info,
+            get_all_groups,
+            listen_to_group_chat,
+            fetch_group_chat_messages
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

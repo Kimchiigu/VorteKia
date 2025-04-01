@@ -10,3 +10,4 @@ pub mod order_handler;
 pub mod ride_manager_handler;
 pub mod lost_and_found_staff_handler;
 pub mod lost_and_found_handler;
+pub mod chat_handler;

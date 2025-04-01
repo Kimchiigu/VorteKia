@@ -35,7 +35,6 @@ export default function StaffLogin() {
 
   return (
     <main className="min-h-screen w-full bg-background flex flex-col">
-      <NavbarStaff />
       <div className="flex flex-grow items-center justify-center">
         <div className="container mx-auto px-4 flex flex-col items-center justify-center">
           <div className="text-center mb-8">
