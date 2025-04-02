@@ -23,11 +23,13 @@ import type { LostAndFoundItem } from "./lost-and-found-item-form-section";
 interface LostAndFoundItemTableSectionProps {
   items: LostAndFoundItem[];
   onEdit: (item: LostAndFoundItem) => void;
+  onStartEdit: () => void;
 }
 
 export function LostAndFoundItemTableSection({
   items,
   onEdit,
+  onStartEdit,
 }: LostAndFoundItemTableSectionProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -148,7 +150,10 @@ export function LostAndFoundItemTableSection({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onEdit(item)}
+                      onClick={() => {
+                        onEdit(item);
+                        onStartEdit();
+                      }}
                     >
                       <Edit className="h-4 w-4" />
                       <span className="sr-only">Edit</span>

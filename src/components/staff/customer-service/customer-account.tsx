@@ -11,13 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { UserPlus, RefreshCw, Check } from "lucide-react";
 
@@ -25,9 +18,8 @@ export interface NewCustomerData {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  dob: string;
   initialBalance: number;
-  membershipType: string;
 }
 
 interface CustomerAccountProps {
@@ -37,17 +29,15 @@ interface CustomerAccountProps {
 export function CustomerAccount({ onCreateCustomer }: CustomerAccountProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [dob, setDob] = useState("");
   const [initialBalance, setInitialBalance] = useState(0);
-  const [membershipType, setMembershipType] = useState("standard");
   const [customIdEnabled, setCustomIdEnabled] = useState(false);
   const [customId, setCustomId] = useState("");
   const [generatedId, setGeneratedId] = useState("");
   const [success, setSuccess] = useState(false);
 
   const generateCustomerId = () => {
-    // Custom algorithm for ID generation
-    const prefix = "VK";
+    const prefix = "CUS";
     const timestamp = Date.now().toString().slice(-6);
     const randomNum = Math.floor(Math.random() * 1000)
       .toString()
@@ -74,14 +64,12 @@ export function CustomerAccount({ onCreateCustomer }: CustomerAccountProps) {
       id: customerId,
       name,
       email,
-      phone,
+      dob,
       initialBalance,
-      membershipType,
     };
 
     onCreateCustomer(newCustomer);
 
-    // Show success message
     setSuccess(true);
     setTimeout(() => {
       setSuccess(false);
@@ -92,9 +80,8 @@ export function CustomerAccount({ onCreateCustomer }: CustomerAccountProps) {
   const resetForm = () => {
     setName("");
     setEmail("");
-    setPhone("");
+    setDob("");
     setInitialBalance(0);
-    setMembershipType("standard");
     setCustomIdEnabled(false);
     setCustomId("");
     setGeneratedId("");
@@ -104,7 +91,7 @@ export function CustomerAccount({ onCreateCustomer }: CustomerAccountProps) {
     return (
       name.trim() !== "" &&
       email.trim() !== "" &&
-      phone.trim() !== "" &&
+      dob.trim() !== "" &&
       (customIdEnabled ? customId.trim() !== "" : true)
     );
   };
@@ -117,7 +104,7 @@ export function CustomerAccount({ onCreateCustomer }: CustomerAccountProps) {
           Create Customer Account
         </CardTitle>
         <CardDescription>
-          Add a new customer to the system with a custom or generated ID
+          Add a new customer with name, email, DOB, balance, and ID
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -130,7 +117,7 @@ export function CustomerAccount({ onCreateCustomer }: CustomerAccountProps) {
               Customer Created Successfully!
             </h3>
             <p className="text-muted-foreground text-center mt-2">
-              The new customer account has been added to the system.
+              The customer account has been created.
             </p>
           </div>
         ) : (
@@ -160,12 +147,12 @@ export function CustomerAccount({ onCreateCustomer }: CustomerAccountProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="dob">Date of Birth</Label>
                 <Input
-                  id="phone"
-                  placeholder="Enter phone number"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  id="dob"
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
                   required
                 />
               </div>
@@ -182,24 +169,6 @@ export function CustomerAccount({ onCreateCustomer }: CustomerAccountProps) {
                     setInitialBalance(Number.parseFloat(e.target.value))
                   }
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="membership">Membership Type</Label>
-                <Select
-                  value={membershipType}
-                  onValueChange={setMembershipType}
-                >
-                  <SelectTrigger id="membership">
-                    <SelectValue placeholder="Select membership type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="standard">Standard</SelectItem>
-                    <SelectItem value="premium">Premium</SelectItem>
-                    <SelectItem value="vip">VIP</SelectItem>
-                    <SelectItem value="family">Family</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
@@ -248,10 +217,6 @@ export function CustomerAccount({ onCreateCustomer }: CustomerAccountProps) {
                     placeholder="ID will be generated automatically"
                     className="bg-muted"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    ID will be generated based on name and timestamp if not
-                    refreshed manually
-                  </p>
                 </div>
               )}
             </div>

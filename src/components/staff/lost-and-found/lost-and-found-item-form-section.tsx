@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Camera, Upload } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 
 interface LostAndFoundItemFormSectionProps {
   mode: "insert" | "update";
@@ -84,8 +85,32 @@ export function LostAndFoundItemFormSection({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (
+      (formData.status === "Found" ||
+        formData.status === "Returned to Owner") &&
+      formData.owner
+    ) {
+      try {
+        await invoke("send_notification", {
+          recipientId: formData.owner,
+          title:
+            formData.status === "Found"
+              ? "Your item has been found!"
+              : "Your item has been returned!",
+          message:
+            formData.status === "Found"
+              ? `The item "${formData.name}" has been located by our staff. Please claim it soon.`
+              : `The item "${formData.name}" has been successfully returned to you. Thank you!`,
+          notifType: "Lost And Found",
+        });
+      } catch (err) {
+        console.error("Failed to send notification:", err);
+      }
+    }
+
     onSubmit(formData);
   };
 

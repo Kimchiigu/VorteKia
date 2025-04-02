@@ -99,6 +99,7 @@ export default function LostAndFound() {
             <LostAndFoundItemTableSection
               items={items}
               onEdit={setEditingItem}
+              onStartEdit={() => setActiveTab("edit")}
             />
           </TabsContent>
           <TabsContent value="add" className="mt-6">

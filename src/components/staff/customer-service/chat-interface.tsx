@@ -13,6 +13,7 @@ import { listen } from "@tauri-apps/api/event";
 export interface ChatMessage {
   message_id: string;
   sender_id: string;
+  sender_name?: string;
   content: string;
   status: "sent" | "read";
   timestamp: string;
@@ -53,6 +54,7 @@ export function ChatInterface({
   onSendMessage,
   userId,
 }: ChatInterfaceProps) {
+  const [senderNames, setSenderNames] = useState<Record<string, string>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [chatMessages, setChatMessages] = useState<
@@ -63,7 +65,86 @@ export function ChatInterface({
 
   const list = mode === "customer" ? customers : groups;
 
-  // Fungsi untuk memilih chat dan mengaktifkan listener
+  const fetchSenderName = async (userId: string): Promise<string> => {
+    if (senderNames[userId]) return senderNames[userId];
+
+    try {
+      const response = await invoke<{
+        success: boolean;
+        data: { user_id: string; name: string; role: string };
+      }>("get_user_lite_by_id", { userId });
+
+      if (response) {
+        const name = response.data.name;
+        console.log("Fetched sender name:", name);
+        setSenderNames((prev) => ({ ...prev, [userId]: name }));
+        return name;
+      } else {
+        console.warn("User name fetch failed:", response);
+        return userId;
+      }
+    } catch (error) {
+      console.error("Failed to fetch user name:", error);
+      return userId;
+    }
+  };
+
+  const ChatMessageItem = ({
+    message,
+    userId,
+    fetchSenderName,
+  }: {
+    message: ChatMessage;
+    userId: string;
+    fetchSenderName: (userId: string) => Promise<string>;
+  }) => {
+    const [senderName, setSenderName] = useState<string>(message.sender_id);
+
+    useEffect(() => {
+      const getSenderName = async () => {
+        const name = await fetchSenderName(message.sender_id);
+        setSenderName(name);
+      };
+      getSenderName();
+    }, [message.sender_id, fetchSenderName]);
+
+    return (
+      <div
+        className={`flex ${
+          message.sender_id === userId ? "justify-end" : "justify-start"
+        }`}
+      >
+        <div
+          className={`max-w-[80%] rounded-lg p-3 ${
+            message.sender_id === userId
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted"
+          }`}
+        >
+          <p
+            className={`text-xs font-medium mb-1 ${
+              message.sender_id === userId
+                ? "text-primary-foreground/90"
+                : "text-foreground"
+            }`}
+          >
+            {senderName}
+          </p>
+          <p>{message.content}</p>
+          <p
+            className={`text-xs mt-1 ${
+              message.sender_id === userId
+                ? "text-primary-foreground/70"
+                : "text-muted-foreground"
+            }`}
+          >
+            {formatTime(message.timestamp)}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   const handleSelectChat = async (id: string) => {
     setSelectedId(id);
     try {
@@ -80,10 +161,10 @@ export function ChatInterface({
       setChatMessages((prev) => ({
         ...prev,
         [id]: messages.map((m) => ({
-          message_id: m.message_id, // Standardized to `message_id`
+          message_id: m.message_id,
           sender_id: m.sender_id,
           content: m.content,
-          status: "read" as "sent" | "read", // Assuming fetched messages are read
+          status: "read" as "sent" | "read",
           timestamp: m.timestamp,
           type: m.type as "customer" | "staff" | "group",
         })),
@@ -308,10 +389,10 @@ export function ChatInterface({
       </Card>
 
       {/* Chat Area */}
-      <Card className="md:col-span-2 flex flex-col">
+      <Card className="md:col-span-2 flex flex-col h-[calc(100vh-300px)]">
         {selectedId ? (
           <>
-            <CardHeader className="border-b">
+            <CardHeader className="border-b shrink-0">
               <div className="flex items-center gap-3">
                 <Avatar>
                   <AvatarImage
@@ -357,33 +438,12 @@ export function ChatInterface({
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
               {chatMessages[selectedId]?.map((message) => (
-                <div
+                <ChatMessageItem
                   key={message.message_id}
-                  className={`flex ${
-                    message.sender_id === userId
-                      ? "justify-end"
-                      : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.sender_id === userId
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
-                  >
-                    <p>{message.content}</p>
-                    <p
-                      className={`text-xs mt-1 ${
-                        message.sender_id === userId
-                          ? "text-primary-foreground/70"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {formatTime(message.timestamp)}
-                    </p>
-                  </div>
-                </div>
+                  message={message}
+                  userId={userId}
+                  fetchSenderName={fetchSenderName}
+                />
               ))}
               <div ref={messagesEndRef} />
             </CardContent>

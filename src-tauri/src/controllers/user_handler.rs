@@ -232,3 +232,79 @@ pub async fn get_all_users_lite(
         Err(err) => Ok(ApiResponse::error(format!("Database error: {}", err))),
     }
 }
+
+#[tauri::command]
+pub async fn get_user_lite_by_id(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<ApiResponse<UserLiteResponse>, String> {
+    let cache_key = format!("user_lite_{}", user_id);
+
+    if let Some(cached_user) = cache_get::<user::Model>(&state.redis_pool, &cache_key).await {
+        return Ok(ApiResponse::success(UserLiteResponse {
+            user_id: cached_user.user_id,
+            name: cached_user.name,
+            role: cached_user.role,
+        }));
+    }
+
+    match User::find()
+        .filter(user::Column::UserId.eq(user_id.clone()))
+        .one(&state.db)
+        .await
+    {
+        Ok(Some(user)) => {
+            let response = UserLiteResponse {
+                user_id: user.user_id.clone(),
+                name: user.name.clone(),
+                role: user.role.clone(),
+            };
+            cache_set(&state.redis_pool, &cache_key, &user, 3600).await;
+            Ok(ApiResponse::success(response))
+        }
+        Ok(None) => Ok(ApiResponse::error("User not found".into())),
+        Err(err) => Ok(ApiResponse::error(format!("Database error: {}", err))),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct CreateCustomerRequest {
+    pub user_id: String,
+    pub name: String,
+    pub email: String,
+    pub dob: String,
+    pub balance: f64,
+}
+
+#[tauri::command]
+pub async fn create_customer(
+    state: State<'_, AppState>,
+    payload: CreateCustomerRequest,
+) -> Result<ApiResponse<UserResponse>, String> {
+    let new_customer = user::ActiveModel {
+        user_id: Set(payload.user_id.clone()),
+        name: Set(payload.name.clone()),
+        email: Set(payload.email.clone()),
+        dob: Set(payload.dob.clone()),
+        balance: Set(payload.balance),
+        role: Set("Customer".to_string()),
+        password: Set(None),
+        restaurant_id: Set(None),
+    };
+
+    match new_customer.insert(&state.db).await {
+        Ok(created) => {
+            let response = UserResponse {
+                user_id: created.user_id,
+                name: created.name,
+                email: created.email,
+                role: created.role,
+                balance: created.balance,
+                restaurant_id: created.restaurant_id,
+            };
+            Ok(ApiResponse::success(response))
+        }
+        Err(err) => Ok(ApiResponse::error(format!("Failed to create customer: {}", err))),
+    }
+}
+

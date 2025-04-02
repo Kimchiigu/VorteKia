@@ -1,14 +1,6 @@
-"use client";
-
-import { useState } from "react";
-import { Navbar } from "@/components/navbar/navbar";
-import { HeroStaff } from "@/components/staff/hero-staff";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-import {
-  ChatInterface,
-  type Customer,
-} from "@/components/staff/customer-service/chat-interface";
+import { invoke } from "@tauri-apps/api/core";
 
 import {
   BroadcastMessage,
@@ -26,57 +18,8 @@ import {
   type Ride,
   type Restaurant,
 } from "@/components/staff/customer-service/park-information";
+import { OfficialChatInterface } from "@/components/staff/customer-service/official-chat-interface";
 
-// Dummy data for customers
-const initialCustomers: Customer[] = [
-  {
-    id: "VK-JD123456-789",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    lastActive: new Date(Date.now() - 5 * 60000),
-    status: "online",
-    unreadCount: 2,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "VK-AS234567-012",
-    name: "Alice Smith",
-    email: "alice.smith@example.com",
-    lastActive: new Date(Date.now() - 15 * 60000),
-    status: "online",
-    unreadCount: 0,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "VK-RJ345678-234",
-    name: "Robert Johnson",
-    email: "robert.johnson@example.com",
-    lastActive: new Date(Date.now() - 2 * 3600000),
-    status: "away",
-    unreadCount: 0,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "VK-EW456789-345",
-    name: "Emily Wilson",
-    email: "emily.wilson@example.com",
-    lastActive: new Date(Date.now() - 1 * 3600000),
-    status: "online",
-    unreadCount: 1,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "VK-MB567890-456",
-    name: "Michael Brown",
-    email: "michael.brown@example.com",
-    lastActive: new Date(Date.now() - 5 * 3600000),
-    status: "offline",
-    unreadCount: 0,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-];
-
-// Dummy data for departments
 const departments: Department[] = [
   { id: "dept1", name: "Ride Operations" },
   { id: "dept2", name: "Food & Beverage" },
@@ -86,174 +29,73 @@ const departments: Department[] = [
   { id: "dept6", name: "Guest Relations" },
 ];
 
-// Dummy data for rides
-const rides: Ride[] = [
-  {
-    id: "ride1",
-    name: "Thunderbolt Roller Coaster",
-    description: "A high-speed roller coaster with multiple loops and drops.",
-    location: "Thrill Zone",
-    status: "Operational",
-    waitTime: 45,
-    capacity: 24,
-    minHeight: 122,
-    duration: 3,
-    thrill: "Extreme",
-  },
-  {
-    id: "ride2",
-    name: "Splash Mountain",
-    description: "A water log ride with a thrilling drop at the end.",
-    location: "Water World",
-    status: "Operational",
-    waitTime: 30,
-    capacity: 8,
-    minHeight: 107,
-    duration: 7,
-    thrill: "High",
-  },
-  {
-    id: "ride3",
-    name: "Haunted Mansion",
-    description: "A spooky dark ride through a haunted house.",
-    location: "Fantasy Land",
-    status: "Maintenance",
-    waitTime: 0,
-    capacity: 4,
-    minHeight: 102,
-    duration: 8,
-    thrill: "Moderate",
-  },
-  {
-    id: "ride4",
-    name: "Carousel",
-    description: "A classic carousel ride suitable for all ages.",
-    location: "Kids Zone",
-    status: "Operational",
-    waitTime: 10,
-    capacity: 30,
-    minHeight: 91,
-    duration: 5,
-    thrill: "Low",
-  },
-  {
-    id: "ride5",
-    name: "Space Odyssey",
-    description: "A space-themed simulator ride with immersive effects.",
-    location: "Future World",
-    status: "Closed",
-    waitTime: 0,
-    capacity: 16,
-    minHeight: 112,
-    duration: 6,
-    thrill: "High",
-  },
-];
+interface CustomerServiceProps {
+  userId: string;
+}
 
-// Dummy data for restaurants
-const restaurants: Restaurant[] = [
-  {
-    id: "rest1",
-    name: "Cosmic Café",
-    description: "A space-themed restaurant with futuristic decor.",
-    location: "Future World",
-    status: "Open",
-    cuisine: "International",
-    priceRange: "$$",
-    capacity: 150,
-    currentOccupancy: 95,
-    openingHours: "10:00 AM - 9:00 PM",
-  },
-  {
-    id: "rest2",
-    name: "Pirate's Feast",
-    description: "A pirate-themed buffet restaurant with entertainment.",
-    location: "Adventure Isle",
-    status: "Open",
-    cuisine: "Buffet",
-    priceRange: "$$$",
-    capacity: 200,
-    currentOccupancy: 180,
-    openingHours: "11:00 AM - 10:00 PM",
-  },
-  {
-    id: "rest3",
-    name: "Jungle Grill",
-    description: "Quick-service restaurant with burgers and sandwiches.",
-    location: "Wild Safari",
-    status: "Open",
-    cuisine: "American",
-    priceRange: "$",
-    capacity: 80,
-    currentOccupancy: 45,
-    openingHours: "10:30 AM - 8:00 PM",
-  },
-  {
-    id: "rest4",
-    name: "Ice Cream Palace",
-    description: "Specialty ice cream shop with unique flavors.",
-    location: "Fantasy Land",
-    status: "Open",
-    cuisine: "Desserts",
-    priceRange: "$",
-    capacity: 40,
-    currentOccupancy: 25,
-    openingHours: "11:00 AM - 9:30 PM",
-  },
-  {
-    id: "rest5",
-    name: "Dragon's Den Restaurant",
-    description: "Fine dining experience with medieval theme.",
-    location: "Castle Area",
-    status: "Closed",
-    cuisine: "European",
-    priceRange: "$$$",
-    capacity: 120,
-    currentOccupancy: 0,
-    openingHours: "5:00 PM - 10:00 PM",
-  },
-];
-
-export default function CustomerService() {
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+export default function CustomerService({ userId }: CustomerServiceProps) {
   const [activeTab, setActiveTab] = useState("chat");
+  const [rides, setRides] = useState([]);
+  const [restaurants, setRestaurants] = useState([]);
 
-  // Chat handlers
-  const handleSendMessage = (customerId: string, message: string) => {
-    console.log(`Message sent to ${customerId}: ${message}`);
-    // In a real app, this would send the message to the backend
+  const handleSendBroadcast = async (message: BroadcastMessageData) => {
+    try {
+      await invoke("send_broadcast_message", {
+        payload: {
+          content: message.content,
+          recipients: {
+            all_customers: message.recipients.allCustomers,
+            customer_departments: message.recipients.customerDepartments,
+            all_staff: message.recipients.allStaff,
+            staff_departments: message.recipients.staffDepartments,
+          },
+        },
+      });
 
-    // Update unread count for demo purposes
-    setCustomers((prev) =>
-      prev.map((customer) =>
-        customer.id === customerId ? { ...customer, unreadCount: 0 } : customer
-      )
-    );
+      console.log("✅ Broadcast sent successfully");
+    } catch (error) {
+      console.error("❌ Failed to send broadcast:", error);
+    }
   };
 
-  // Broadcast handlers
-  const handleSendBroadcast = (message: BroadcastMessageData) => {
-    console.log("Broadcast message sent:", message);
-    // In a real app, this would send the broadcast to the backend
+  const handleCreateCustomer = async (customer: NewCustomerData) => {
+    try {
+      await invoke("create_customer", {
+        payload: {
+          user_id: customer.id,
+          name: customer.name,
+          email: customer.email,
+          dob: customer.dob,
+          balance: customer.initialBalance,
+        },
+      });
+
+      console.log("✅ Customer created successfully");
+    } catch (error) {
+      console.error("❌ Failed to create customer:", error);
+    }
   };
 
-  // Customer account handlers
-  const handleCreateCustomer = (customer: NewCustomerData) => {
-    console.log("New customer created:", customer);
-    // In a real app, this would send the customer data to the backend
+  useEffect(() => {
+    const fetchRidesAndRestaurants = async () => {
+      try {
+        const rideResponse = await invoke("view_all_rides");
+        const restaurantResponse = await invoke("view_all_restaurants");
 
-    // Add customer to the list for demo purposes
-    const newCustomer: Customer = {
-      id: customer.id,
-      name: customer.name,
-      email: customer.email,
-      lastActive: new Date(),
-      status: "offline",
-      unreadCount: 0,
+        if ("data" in rideResponse) {
+          setRides(rideResponse.data);
+        }
+
+        if ("data" in restaurantResponse) {
+          setRestaurants(restaurantResponse.data);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch rides or restaurants:", err);
+      }
     };
 
-    setCustomers((prev) => [newCustomer, ...prev]);
-  };
+    fetchRidesAndRestaurants();
+  }, []);
 
   return (
     <main className="min-h-screen w-full bg-background">
@@ -267,11 +109,7 @@ export default function CustomerService() {
           </TabsList>
 
           <TabsContent value="chat" className="mt-6">
-            <ChatInterface
-              mode="customer"
-              customers={initialCustomers}
-              onSendMessage={(id, msg) => console.log("Send to", id, msg)}
-            />
+            <OfficialChatInterface userId={userId} />
           </TabsContent>
 
           <TabsContent value="broadcast" className="mt-6">

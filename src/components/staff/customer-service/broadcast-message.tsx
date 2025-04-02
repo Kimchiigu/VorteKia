@@ -9,59 +9,98 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { BellRing, Send, Users, Clock } from "lucide-react";
+import { BellRing, Send, Users, Building2 } from "lucide-react";
 
-export interface Department {
+export interface CustomerDepartment {
   id: string;
   name: string;
 }
 
+export interface StaffDepartment {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface BroadcastMessageData {
-  title: string;
   content: string;
-  type: "announcement" | "alert" | "update";
   recipients: {
     allCustomers: boolean;
-    departments: string[];
+    customerDepartments: string[];
+    allStaff: boolean;
+    staffDepartments: string[];
   };
-  scheduledTime?: Date;
 }
 
 interface BroadcastMessageProps {
-  departments: Department[];
+  customerDepartments: CustomerDepartment[];
   onSendBroadcast: (message: BroadcastMessageData) => void;
 }
 
 export function BroadcastMessage({
-  departments,
+  customerDepartments,
   onSendBroadcast,
 }: BroadcastMessageProps) {
-  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [messageType, setMessageType] = useState<
-    "announcement" | "alert" | "update"
-  >("announcement");
   const [sendToAllCustomers, setSendToAllCustomers] = useState(true);
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [isScheduled, setIsScheduled] = useState(false);
-  const [scheduledTime, setScheduledTime] = useState<string>("");
+  const [selectedCustomerDepartments, setSelectedCustomerDepartments] =
+    useState<string[]>([]);
+  const [sendToAllStaff, setSendToAllStaff] = useState(false);
+  const [selectedStaffDepartments, setSelectedStaffDepartments] = useState<
+    string[]
+  >([]);
+
+  // Staff departments list
+  const staffDepartments: StaffDepartment[] = [
+    {
+      id: "GRP-CSS",
+      name: "Customer Service Division",
+      description: "Customer Service staff",
+    },
+    {
+      id: "GRP-LFS",
+      name: "Lost and Found Division",
+      description: "Lost and Found staff",
+    },
+    {
+      id: "GRP-OPS",
+      name: "Operational Division",
+      description: "Ride Manager and Ride Staff",
+    },
+    {
+      id: "GRP-CSM",
+      name: "Consumption Division",
+      description: "F&B Supervisor, Chef, and Waiter",
+    },
+    {
+      id: "GRP-CMD",
+      name: "Care and Maintenance Division",
+      description: "Maintenance Manager and Staff",
+    },
+    {
+      id: "GRP-MKT",
+      name: "Marketing Division",
+      description: "Retail Manager and Sales Associate",
+    },
+    {
+      id: "GRP-EXC",
+      name: "Executive Division",
+      description: "CEO, CFO, and COO",
+    },
+  ];
 
   const handleSendBroadcast = () => {
     const broadcastData: BroadcastMessageData = {
-      title,
       content,
-      type: messageType,
       recipients: {
         allCustomers: sendToAllCustomers,
-        departments: selectedDepartments,
+        customerDepartments: selectedCustomerDepartments,
+        allStaff: sendToAllStaff,
+        staffDepartments: selectedStaffDepartments,
       },
-      scheduledTime:
-        isScheduled && scheduledTime ? new Date(scheduledTime) : undefined,
     };
 
     onSendBroadcast(broadcastData);
@@ -69,31 +108,49 @@ export function BroadcastMessage({
   };
 
   const resetForm = () => {
-    setTitle("");
     setContent("");
-    setMessageType("announcement");
     setSendToAllCustomers(true);
-    setSelectedDepartments([]);
-    setIsScheduled(false);
-    setScheduledTime("");
+    setSelectedCustomerDepartments([]);
+    setSendToAllStaff(false);
+    setSelectedStaffDepartments([]);
   };
 
-  const handleDepartmentChange = (departmentId: string, checked: boolean) => {
+  const handleCustomerDepartmentChange = (
+    departmentId: string,
+    checked: boolean
+  ) => {
     if (checked) {
-      setSelectedDepartments([...selectedDepartments, departmentId]);
+      setSelectedCustomerDepartments([
+        ...selectedCustomerDepartments,
+        departmentId,
+      ]);
     } else {
-      setSelectedDepartments(
-        selectedDepartments.filter((id) => id !== departmentId)
+      setSelectedCustomerDepartments(
+        selectedCustomerDepartments.filter((id) => id !== departmentId)
+      );
+    }
+  };
+
+  const handleStaffDepartmentChange = (
+    departmentId: string,
+    checked: boolean
+  ) => {
+    if (checked) {
+      setSelectedStaffDepartments([...selectedStaffDepartments, departmentId]);
+    } else {
+      setSelectedStaffDepartments(
+        selectedStaffDepartments.filter((id) => id !== departmentId)
       );
     }
   };
 
   const isFormValid = () => {
     return (
-      title.trim() !== "" &&
       content.trim() !== "" &&
-      (sendToAllCustomers || selectedDepartments.length > 0) &&
-      (!isScheduled || (isScheduled && scheduledTime !== ""))
+      (sendToAllCustomers ||
+        selectedCustomerDepartments.length > 0 ||
+        sendToAllStaff ||
+        selectedStaffDepartments.length > 0)
     );
   };
 
@@ -105,21 +162,11 @@ export function BroadcastMessage({
           Broadcast Message
         </CardTitle>
         <CardDescription>
-          Create and send announcements to customers or departments
+          Create and send announcements to customers or staff departments
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Message Title</Label>
-            <Input
-              id="title"
-              placeholder="Enter message title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="content">Message Content</Label>
             <Textarea
@@ -131,29 +178,8 @@ export function BroadcastMessage({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Message Type</Label>
-            <RadioGroup
-              value={messageType}
-              onValueChange={(value) => setMessageType(value as any)}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="announcement" id="announcement" />
-                <Label htmlFor="announcement">Announcement</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="alert" id="alert" />
-                <Label htmlFor="alert">Alert</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="update" id="update" />
-                <Label htmlFor="update">Update</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
           <div className="space-y-4">
-            <Label>Recipients</Label>
+            <Label>Customer Recipients</Label>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="all-customers"
@@ -161,7 +187,7 @@ export function BroadcastMessage({
                 onCheckedChange={(checked) => {
                   setSendToAllCustomers(checked as boolean);
                   if (checked) {
-                    setSelectedDepartments([]);
+                    setSelectedCustomerDepartments([]);
                   }
                 }}
               />
@@ -176,24 +202,26 @@ export function BroadcastMessage({
 
             {!sendToAllCustomers && (
               <div className="space-y-2 pl-6">
-                <Label>Select Departments</Label>
+                <Label>Select Customer Departments</Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {departments.map((department) => (
+                  {customerDepartments.map((department) => (
                     <div
                       key={department.id}
                       className="flex items-center space-x-2"
                     >
                       <Checkbox
-                        id={`dept-${department.id}`}
-                        checked={selectedDepartments.includes(department.id)}
+                        id={`customer-dept-${department.id}`}
+                        checked={selectedCustomerDepartments.includes(
+                          department.id
+                        )}
                         onCheckedChange={(checked) =>
-                          handleDepartmentChange(
+                          handleCustomerDepartmentChange(
                             department.id,
                             checked as boolean
                           )
                         }
                       />
-                      <Label htmlFor={`dept-${department.id}`}>
+                      <Label htmlFor={`customer-dept-${department.id}`}>
                         {department.name}
                       </Label>
                     </div>
@@ -203,31 +231,60 @@ export function BroadcastMessage({
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-4">
+            <Label>Staff Departments</Label>
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="schedule"
-                checked={isScheduled}
-                onCheckedChange={(checked) =>
-                  setIsScheduled(checked as boolean)
-                }
+                id="all-staff"
+                checked={sendToAllStaff}
+                onCheckedChange={(checked) => {
+                  setSendToAllStaff(checked as boolean);
+                  if (checked) {
+                    setSelectedStaffDepartments([]);
+                  }
+                }}
               />
-              <Label htmlFor="schedule" className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Schedule for later
+              <Label htmlFor="all-staff" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                All Staff Departments
               </Label>
             </div>
 
-            {isScheduled && (
-              <div className="pl-6">
-                <Label htmlFor="scheduled-time">Select Date and Time</Label>
-                <Input
-                  id="scheduled-time"
-                  type="datetime-local"
-                  value={scheduledTime}
-                  onChange={(e) => setScheduledTime(e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
-                />
+            {!sendToAllStaff && (
+              <div className="space-y-2 pl-6">
+                <Label>Select Staff Departments</Label>
+                <div className="grid grid-cols-1 gap-2">
+                  {staffDepartments.map((department) => (
+                    <div
+                      key={department.id}
+                      className="flex items-center space-x-2"
+                    >
+                      <Checkbox
+                        id={`staff-dept-${department.id}`}
+                        checked={selectedStaffDepartments.includes(
+                          department.id
+                        )}
+                        onCheckedChange={(checked) =>
+                          handleStaffDepartmentChange(
+                            department.id,
+                            checked as boolean
+                          )
+                        }
+                      />
+                      <div>
+                        <Label
+                          htmlFor={`staff-dept-${department.id}`}
+                          className="font-medium"
+                        >
+                          {department.name} ({department.id})
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          {department.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -236,7 +293,7 @@ export function BroadcastMessage({
         <div className="flex justify-end">
           <Button onClick={handleSendBroadcast} disabled={!isFormValid()}>
             <Send className="h-4 w-4 mr-2" />
-            {isScheduled ? "Schedule Broadcast" : "Send Broadcast"}
+            Send Broadcast
           </Button>
         </div>
       </CardContent>

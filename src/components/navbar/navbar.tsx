@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { LoginDialog } from "../customer/login-dialog";
 import { useAuth } from "@/components/provider/auth-provider";
 import { UserNav } from "./user-nav";
-
+import { CustomerServiceChat } from "../customer/customer-service-chat";
 import { NotificationCenter } from "../customer/notification-center";
 import { Menu, X } from "lucide-react";
 import { ModeToggle } from "../theme/mode-toggle";
@@ -29,6 +29,7 @@ export function Navbar() {
           <ModeToggle />
           {user ? (
             <>
+              <CustomerServiceChat customerId={user.user_id} />
               <NotificationCenter />
               <UserNav />
             </>

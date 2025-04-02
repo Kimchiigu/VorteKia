@@ -4,6 +4,8 @@ use serde::Serialize;
 use tauri::State;
 use crate::{ApiResponse, cache_get, cache_set, AppState};
 use entity::notification::{self, Entity as Notification, ActiveModel as NotificationActiveModel};
+use chrono::Utc;
+use uuid::Uuid;
 
 #[derive(Serialize)]
 pub struct NotificationResponse {
@@ -13,6 +15,30 @@ pub struct NotificationResponse {
     pub date: String,
     pub is_read: bool,
     pub r#type: String,
+}
+
+#[tauri::command]
+pub async fn send_notification(
+    state: State<'_, AppState>,
+    recipient_id: String,
+    title: String,
+    message: String,
+    notif_type: String,
+) -> Result<ApiResponse<notification::Model>, String> {
+    let new_notification = NotificationActiveModel {
+        notification_id: Set(Uuid::new_v4().to_string()),
+        recipient_id: Set(recipient_id),
+        title: Set(title),
+        message: Set(message),
+        date: Set(Utc::now().to_rfc3339()),
+        is_read: Set(false),
+        r#type: Set(notif_type),
+    };
+
+    match new_notification.insert(&state.db).await {
+        Ok(saved) => Ok(ApiResponse::success(saved)),
+        Err(err) => Ok(ApiResponse::error(format!("Failed to send notification: {}", err))),
+    }
 }
 
 #[tauri::command]
