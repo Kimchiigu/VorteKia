@@ -32,9 +32,13 @@ export default function StaffHome() {
         <div className="mt-12 space-y-16">
           {user ? (
             <>
-              {user.role === "Customer Service" && <CustomerService userId={user.user_id} />}
+              {user.role === "Customer Service" && (
+                <CustomerService userId={user.user_id} />
+              )}
               {user.role === "Lost And Found Staff" && <LostAndFound />}
-              {user.role === "Ride Manager" && <RideManager />}
+              {user.role === "Ride Manager" && (
+                <RideManager staffId={user.user_id} />
+              )}
               {user.role === "Ride Staff" && <RideStaff />}
               {user.role === "F&B Supervisor" && <FNBSupervisor />}
               {user.role === "Chef" && <Chef />}

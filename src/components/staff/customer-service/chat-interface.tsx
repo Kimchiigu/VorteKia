@@ -61,6 +61,7 @@ export function ChatInterface({
     Record<string, ChatMessage[]>
   >({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const list = mode === "customer" ? customers : groups;
@@ -146,7 +147,9 @@ export function ChatInterface({
   };
 
   const handleSelectChat = async (id: string) => {
+    if (id === activeGroupId) return;
     setSelectedId(id);
+    setActiveGroupId(id);
     try {
       await invoke("listen_to_group_chat", { groupId: id });
       console.log(`📡 Listening to group chat: ${id}`);

@@ -54,15 +54,12 @@ export interface MaintenanceRequest {
   rideId: string;
   rideName: string;
   title: string;
-  description: string;
-  priority: MaintenancePriority;
+  issue: string;
+  type: MaintenancePriority;
   status: MaintenanceStatus;
-  submittedBy: string;
-  submittedDate: string;
-  estimatedDuration: string;
-  assignedTo?: string;
-  completedDate?: string;
-  notes?: string;
+  senderId: string;
+  date: string;
+  maintenanceStaffId?: string;
 }
 
 export interface RideOption {
@@ -76,14 +73,12 @@ interface MaintenanceRequestProps {
   onSubmitRequest: (
     request: Omit<MaintenanceRequest, "id" | "status" | "submittedDate">
   ) => void;
-  onCancelRequest: (requestId: string) => void;
 }
 
 export function MaintenanceRequest({
   requests,
   rides,
   onSubmitRequest,
-  onCancelRequest,
 }: MaintenanceRequestProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -91,17 +86,17 @@ export function MaintenanceRequest({
   const [selectedRequest, setSelectedRequest] =
     useState<MaintenanceRequest | null>(null);
 
-  // Form state for new request
   const [formData, setFormData] = useState<
     Omit<MaintenanceRequest, "id" | "status" | "submittedDate">
   >({
     rideId: "",
     rideName: "",
     title: "",
-    description: "",
-    priority: "Medium",
-    submittedBy: "Ride Manager",
-    estimatedDuration: "",
+    issue: "",
+    type: "Medium",
+    senderId: "Ride Manager",
+    date: "",
+    maintenanceStaffId: "",
   });
 
   const filteredRequests = requests.filter(
@@ -152,10 +147,11 @@ export function MaintenanceRequest({
       rideId: "",
       rideName: "",
       title: "",
-      description: "",
-      priority: "Medium",
-      submittedBy: "Ride Manager",
-      estimatedDuration: "",
+      issue: "",
+      type: "Medium",
+      senderId: "Ride Manager",
+      date: "",
+      maintenanceStaffId: "",
     });
   };
 
@@ -195,8 +191,7 @@ export function MaintenanceRequest({
     return (
       formData.rideId.trim() !== "" &&
       formData.title.trim() !== "" &&
-      formData.description.trim() !== "" &&
-      formData.estimatedDuration.trim() !== ""
+      formData.issue.trim() !== ""
     );
   };
 
@@ -242,7 +237,6 @@ export function MaintenanceRequest({
                     <TableHead>Priority</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Submitted Date</TableHead>
-                    <TableHead>Est. Duration</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -263,7 +257,7 @@ export function MaintenanceRequest({
                         <TableCell>
                           <Badge
                             variant={
-                              getPriorityBadgeVariant(request.priority) as
+                              getPriorityBadgeVariant(request.type) as
                                 | "default"
                                 | "secondary"
                                 | "destructive"
@@ -273,7 +267,7 @@ export function MaintenanceRequest({
                                 | "info"
                             }
                           >
-                            {request.priority}
+                            {request.type}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -292,8 +286,7 @@ export function MaintenanceRequest({
                             {request.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{request.submittedDate}</TableCell>
-                        <TableCell>{request.estimatedDuration}</TableCell>
+                        <TableCell>{request.date}</TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="ghost"
@@ -344,7 +337,7 @@ export function MaintenanceRequest({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="title">Issue Title</Label>
+              <Label htmlFor="title">Issue</Label>
               <Input
                 id="title"
                 name="title"
@@ -361,18 +354,18 @@ export function MaintenanceRequest({
                 id="description"
                 name="description"
                 placeholder="Provide details about the maintenance issue..."
-                value={formData.description}
+                value={formData.issue}
                 onChange={handleInputChange}
                 rows={4}
                 required
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority</Label>
                 <Select
-                  value={formData.priority}
+                  value={formData.type}
                   onValueChange={(value) =>
                     handleSelectChange("priority", value as MaintenancePriority)
                   }
@@ -387,20 +380,6 @@ export function MaintenanceRequest({
                     <SelectItem value="Critical">Critical</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="estimatedDuration">
-                  Estimated Repair Duration
-                </Label>
-                <Input
-                  id="estimatedDuration"
-                  name="estimatedDuration"
-                  placeholder="e.g., 2 hours, 1 day"
-                  value={formData.estimatedDuration}
-                  onChange={handleInputChange}
-                  required
-                />
               </div>
             </div>
 
@@ -471,7 +450,7 @@ export function MaintenanceRequest({
                   </Badge>
                   <Badge
                     variant={
-                      getPriorityBadgeVariant(selectedRequest.priority) as
+                      getPriorityBadgeVariant(selectedRequest.type) as
                         | "default"
                         | "secondary"
                         | "destructive"
@@ -481,14 +460,14 @@ export function MaintenanceRequest({
                         | "info"
                     }
                   >
-                    {selectedRequest.priority} Priority
+                    {selectedRequest.type} Priority
                   </Badge>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <h4 className="text-sm font-medium">Description</h4>
-                <p className="text-sm">{selectedRequest.description}</p>
+                <h4 className="text-sm font-medium">Issue</h4>
+                <p className="text-sm">{selectedRequest.issue}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -496,42 +475,28 @@ export function MaintenanceRequest({
                   <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
                     <h4 className="text-sm font-medium">Submitted Date</h4>
-                    <p className="text-sm">{selectedRequest.submittedDate}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-medium">Estimated Duration</h4>
-                    <p className="text-sm">
-                      {selectedRequest.estimatedDuration}
-                    </p>
+                    <p className="text-sm">{selectedRequest.date}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <Tool className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
                     <h4 className="text-sm font-medium">Submitted By</h4>
-                    <p className="text-sm">{selectedRequest.submittedBy}</p>
+                    <p className="text-sm">{selectedRequest.senderId}</p>
                   </div>
                 </div>
-                {selectedRequest.assignedTo && (
+                {selectedRequest.maintenanceStaffId && (
                   <div className="flex items-start gap-2">
                     <Tool className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
                       <h4 className="text-sm font-medium">Assigned To</h4>
-                      <p className="text-sm">{selectedRequest.assignedTo}</p>
+                      <p className="text-sm">
+                        {selectedRequest.maintenanceStaffId ? selectedRequest.maintenanceStaffId : "-"}
+                      </p>
                     </div>
                   </div>
                 )}
               </div>
-
-              {selectedRequest.notes && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Maintenance Notes</h4>
-                  <p className="text-sm">{selectedRequest.notes}</p>
-                </div>
-              )}
 
               {(selectedRequest.status === "Pending" ||
                 selectedRequest.status === "In Progress") && (
@@ -559,21 +524,6 @@ export function MaintenanceRequest({
             >
               Close
             </Button>
-            {selectedRequest &&
-              (selectedRequest.status === "Draft" ||
-                selectedRequest.status === "Pending") && (
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    if (selectedRequest) {
-                      onCancelRequest(selectedRequest.id);
-                      setIsViewDialogOpen(false);
-                    }
-                  }}
-                >
-                  Cancel Request
-                </Button>
-              )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

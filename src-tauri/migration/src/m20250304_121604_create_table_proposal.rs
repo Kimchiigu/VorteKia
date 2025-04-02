@@ -13,8 +13,13 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(ColumnDef::new(Proposal::ProposalID).string().not_null().primary_key())
                     .col(ColumnDef::new(Proposal::Type).string().not_null())
+                    .col(ColumnDef::new(Proposal::Title).string().not_null())
                     .col(ColumnDef::new(Proposal::Description).string().not_null())
+                    .col(ColumnDef::new(Proposal::Cost).double().not_null())
+                    .col(ColumnDef::new(Proposal::Image).binary().not_null())
+                    .col(ColumnDef::new(Proposal::Feedback).string().null())
                     .col(ColumnDef::new(Proposal::Status).string().not_null())
+                    .col(ColumnDef::new(Proposal::Date).string().not_null())
                     .col(ColumnDef::new(Proposal::SenderID).string().not_null())
                     .foreign_key(
                         ForeignKey::create()
@@ -42,9 +47,14 @@ impl MigrationTrait for Migration {
 enum Proposal {
     Table,
     ProposalID,
+    Title,
     Type,
+    Cost,
+    Image,
+    Feedback,
     Description,
     Status,
+    Date,
     SenderID,
 }
 

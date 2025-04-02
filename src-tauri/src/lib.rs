@@ -15,7 +15,7 @@ use controllers::restaurant_handler::{view_all_restaurants, create_restaurant, d
 use controllers::ride_handler::{view_all_rides, view_ride, create_ride, update_ride, delete_ride};
 use controllers::menu_handler::{view_all_menus, view_menu, create_menu, update_menu, delete_menu};
 use controllers::queue_handler::{view_all_queues, create_queue, delete_queue, get_queues_by_ride};
-use controllers::user_handler::{get_all_users, get_all_users_lite, get_user_lite_by_id, login_user, staff_login, get_balance, top_up_balance, get_notifications, create_customer};
+use controllers::user_handler::{get_all_users, get_all_ride_staff, get_all_users_lite, get_user_lite_by_id, login_user, staff_login, get_balance, top_up_balance, get_notifications, create_customer};
 use controllers::notification_handler::{view_notification, mark_all_notifications_read, send_notification};
 use controllers::store_handler::{view_all_stores, create_store, update_store, delete_store};
 use controllers::souvenir_handler::{view_all_souvenirs, view_souvenir};
@@ -24,6 +24,9 @@ use controllers::lost_and_found_handler::{view_lost_and_found_items, create_lost
 use controllers::chat_handler::{send_group_message, fetch_group_info, get_all_groups, listen_to_group_chat, fetch_group_chat_messages};
 use controllers::official_chat_handler::{fetch_official_chat_customers, fetch_official_chat_messages, send_official_chat_message, listen_to_official_chat};
 use controllers::broadcast_handler::send_broadcast_message;
+use controllers::ride_manager_handler::{assign_ride_staff, create_maintenance_request};
+use controllers::proposal_handler::{create_proposal, view_all_proposal};
+use controllers::maintenance_handler::view_all_maintenance;
 
 pub struct AppState {
     pub db: DatabaseConnection,
@@ -194,6 +197,7 @@ pub async fn run() {
             delete_menu,
             view_all_rides,
             view_ride,
+            assign_ride_staff,
             create_ride,
             update_ride,
             delete_ride,
@@ -203,6 +207,7 @@ pub async fn run() {
             get_queues_by_ride,
             get_all_users,
             get_all_users_lite,
+            get_all_ride_staff,
             get_user_lite_by_id,
             create_customer,
             login_user,
@@ -231,13 +236,17 @@ pub async fn run() {
             send_group_message,
             fetch_group_info,
             get_all_groups,
-            listen_to_group_chat,
+            // listen_to_group_chat,
             fetch_group_chat_messages,
-            listen_to_official_chat,
+            // listen_to_official_chat,
             send_official_chat_message,
             fetch_official_chat_messages,
             fetch_official_chat_customers,
-            send_broadcast_message
+            send_broadcast_message,
+            create_proposal,
+            view_all_proposal,
+            create_maintenance_request,
+            view_all_maintenance,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

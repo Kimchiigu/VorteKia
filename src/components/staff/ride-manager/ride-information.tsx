@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,35 +22,34 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Edit, Users, AlertTriangle, Info } from "lucide-react";
+import { Search, Edit, Users, AlertTriangle, Info, Save } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export interface RideStaff {
   id: string;
   name: string;
   role: string;
-  shift: string;
-  experience: string;
-  status: "On Duty" | "Off Duty" | "On Break";
+  status: "Available" | "Working";
 }
 
 export interface RideDetails {
   id: string;
+  staffId: string;
   name: string;
   description: string;
   location: string;
-  status: "Operational" | "Maintenance" | "Closed";
+  status: string;
   capacity: number;
-  hourlyCapacity: number;
-  minHeight: number;
-  duration: number;
-  thrill: "Low" | "Moderate" | "High" | "Extreme";
-  openingYear: number;
-  lastMaintenance: string;
-  nextMaintenance: string;
-  maintenanceFrequency: string;
-  operatingHours: string;
-  staffRequired: number;
-  currentStaffCount: number;
+  maintenanceStatus: string;
+  price: number;
   image: string;
 }
 
@@ -71,6 +72,8 @@ export function RideInformation({
   const [isStaffDialogOpen, setIsStaffDialogOpen] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [activeTab, setActiveTab] = useState("details");
+  const [editedRide, setEditedRide] = useState<RideDetails | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const filteredRides = rides.filter(
     (ride) =>
@@ -80,7 +83,10 @@ export function RideInformation({
 
   const handleViewDetails = (ride: RideDetails) => {
     setSelectedRide(ride);
+    setEditedRide({ ...ride });
     setIsDetailsDialogOpen(true);
+    setActiveTab("details");
+    setErrors({});
   };
 
   const handleOpenStaffDialog = (ride: RideDetails) => {
@@ -93,6 +99,58 @@ export function RideInformation({
       onAssignStaff(selectedRide.id, selectedStaffId);
       setSelectedStaffId("");
       setIsStaffDialogOpen(false);
+    }
+  };
+
+  const handleEditChange = (field: keyof RideDetails, value: any) => {
+    if (editedRide) {
+      setEditedRide({ ...editedRide, [field]: value });
+
+      // Clear error for this field if it exists
+      if (errors[field]) {
+        const newErrors = { ...errors };
+        delete newErrors[field];
+        setErrors(newErrors);
+      }
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!editedRide?.name?.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    if (!editedRide?.location?.trim()) {
+      newErrors.location = "Location is required";
+    }
+
+    if (!editedRide?.description?.trim()) {
+      newErrors.description = "Description is required";
+    }
+
+    if (
+      editedRide &&
+      (isNaN(editedRide.capacity) || editedRide.capacity <= 0)
+    ) {
+      newErrors.capacity = "Capacity must be a positive number";
+    }
+
+    if (editedRide && (isNaN(editedRide.price) || editedRide.price < 0)) {
+      newErrors.price = "Price must be a non-negative number";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveEdit = () => {
+    if (validateForm() && editedRide) {
+      onEditRide(editedRide);
+      setIsDetailsDialogOpen(false);
+    } else {
+      setActiveTab("edit");
     }
   };
 
@@ -109,57 +167,25 @@ export function RideInformation({
     }
   };
 
-  const getThrillBadgeVariant = (thrill: string) => {
-    switch (thrill) {
-      case "Low":
-        return "secondary";
-      case "Moderate":
-        return "info";
-      case "High":
-        return "warning";
-      case "Extreme":
-        return "destructive";
-      default:
-        return "secondary";
-    }
-  };
-
   const getStaffStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case "On Duty":
+      case "Working":
         return "success";
-      case "Off Duty":
+      case "Available":
         return "secondary";
-      case "On Break":
-        return "warning";
       default:
         return "secondary";
     }
   };
 
   const getAvailableStaff = () => {
-    return staff.filter((s) => s.status !== "Off Duty");
+    return staff.filter((s) => s.status === "Available");
   };
 
   const getRideStaff = (rideId: string) => {
-    // In a real app, this would filter staff assigned to this ride
-    return staff.filter((_, index) => index % 3 === 0);
-  };
-
-  const getStaffingStatus = (current: number, required: number) => {
-    const percentage = (current / required) * 100;
-    if (percentage >= 100) return "Fully Staffed";
-    if (percentage >= 75) return "Adequately Staffed";
-    if (percentage >= 50) return "Understaffed";
-    return "Critically Understaffed";
-  };
-
-  const getStaffingStatusVariant = (current: number, required: number) => {
-    const percentage = (current / required) * 100;
-    if (percentage >= 100) return "success";
-    if (percentage >= 75) return "info";
-    if (percentage >= 50) return "warning";
-    return "destructive";
+    return staff.filter(
+      (s) => s.id === rides.find((r) => r.id === rideId)?.staffId
+    );
   };
 
   return (
@@ -198,9 +224,9 @@ export function RideInformation({
                     <TableHead>Ride Name</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Thrill Level</TableHead>
-                    <TableHead>Staffing</TableHead>
-                    <TableHead>Maintenance</TableHead>
+                    <TableHead>Maintenance Status</TableHead>
+                    <TableHead>Capacity</TableHead>
+                    <TableHead>Price</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -234,42 +260,9 @@ export function RideInformation({
                             {ride.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              getThrillBadgeVariant(ride.thrill) as
-                                | "default"
-                                | "secondary"
-                                | "destructive"
-                                | "outline"
-                                | "success"
-                                | "warning"
-                                | "info"
-                            }
-                          >
-                            {ride.thrill}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              getStaffingStatusVariant(
-                                ride.currentStaffCount,
-                                ride.staffRequired
-                              ) as
-                                | "default"
-                                | "secondary"
-                                | "destructive"
-                                | "outline"
-                                | "success"
-                                | "warning"
-                                | "info"
-                            }
-                          >
-                            {ride.currentStaffCount}/{ride.staffRequired}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{ride.nextMaintenance}</TableCell>
+                        <TableCell>{ride.maintenanceStatus}</TableCell>
+                        <TableCell>{ride.capacity}</TableCell>
+                        <TableCell>${ride.price.toFixed(2)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button
@@ -309,13 +302,14 @@ export function RideInformation({
               Detailed information about the selected ride
             </DialogDescription>
           </DialogHeader>
-          {selectedRide && (
+          {selectedRide && editedRide && (
             <div className="space-y-4">
               <div className="relative h-48 w-full rounded-md bg-muted overflow-hidden">
                 <img
                   src={
                     selectedRide.image ||
-                    "/placeholder.svg?height=200&width=600"
+                    "/placeholder.svg?height=200&width=600" ||
+                    "/placeholder.svg"
                   }
                   alt={selectedRide.name}
                   className="h-full w-full object-cover"
@@ -329,36 +323,20 @@ export function RideInformation({
                     {selectedRide.location}
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <Badge
-                    variant={
-                      getStatusBadgeVariant(selectedRide.status) as
-                        | "default"
-                        | "secondary"
-                        | "destructive"
-                        | "outline"
-                        | "success"
-                        | "warning"
-                        | "info"
-                    }
-                  >
-                    {selectedRide.status}
-                  </Badge>
-                  <Badge
-                    variant={
-                      getThrillBadgeVariant(selectedRide.thrill) as
-                        | "default"
-                        | "secondary"
-                        | "destructive"
-                        | "outline"
-                        | "success"
-                        | "warning"
-                        | "info"
-                    }
-                  >
-                    {selectedRide.thrill} Thrill
-                  </Badge>
-                </div>
+                <Badge
+                  variant={
+                    getStatusBadgeVariant(selectedRide.status) as
+                      | "default"
+                      | "secondary"
+                      | "destructive"
+                      | "outline"
+                      | "success"
+                      | "warning"
+                      | "info"
+                  }
+                >
+                  {selectedRide.status}
+                </Badge>
               </div>
 
               <p>{selectedRide.description}</p>
@@ -372,34 +350,29 @@ export function RideInformation({
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="details">Details</TabsTrigger>
                   <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-                  <TabsTrigger value="staffing">Staffing</TabsTrigger>
+                  <TabsTrigger value="edit">Edit</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="details" className="space-y-4 pt-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <h4 className="text-sm font-medium">Capacity</h4>
-                      <p>{selectedRide.capacity} riders per cycle</p>
+                      <p>{selectedRide.capacity} riders</p>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium">Hourly Capacity</h4>
-                      <p>{selectedRide.hourlyCapacity} riders per hour</p>
+                      <h4 className="text-sm font-medium">Price</h4>
+                      <p>${selectedRide.price.toFixed(2)}</p>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium">Minimum Height</h4>
-                      <p>{selectedRide.minHeight} cm</p>
+                      <h4 className="text-sm font-medium">Location</h4>
+                      <p>{selectedRide.location}</p>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium">Ride Duration</h4>
-                      <p>{selectedRide.duration} minutes</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium">Opening Year</h4>
-                      <p>{selectedRide.openingYear}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium">Operating Hours</h4>
-                      <p>{selectedRide.operatingHours}</p>
+                      <h4 className="text-sm font-medium">Assigned Staff</h4>
+                      <p>
+                        {staff.find((s) => s.id === selectedRide.staffId)
+                          ?.name || "-"}
+                      </p>
                     </div>
                   </div>
                 </TabsContent>
@@ -407,23 +380,12 @@ export function RideInformation({
                 <TabsContent value="maintenance" className="space-y-4 pt-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <h4 className="text-sm font-medium">Last Maintenance</h4>
-                      <p>{selectedRide.lastMaintenance}</p>
-                    </div>
-                    <div>
                       <h4 className="text-sm font-medium">
-                        Next Scheduled Maintenance
+                        Maintenance Status
                       </h4>
-                      <p>{selectedRide.nextMaintenance}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium">
-                        Maintenance Frequency
-                      </h4>
-                      <p>{selectedRide.maintenanceFrequency}</p>
+                      <p>{selectedRide.maintenanceStatus}</p>
                     </div>
                   </div>
-
                   {selectedRide.status === "Maintenance" && (
                     <div className="rounded-md border border-yellow-200 bg-yellow-50 p-4 mt-4">
                       <div className="flex items-start gap-3">
@@ -442,97 +404,107 @@ export function RideInformation({
                   )}
                 </TabsContent>
 
-                <TabsContent value="staffing" className="space-y-4 pt-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h4 className="text-sm font-medium">Staffing Status</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge
-                          variant={
-                            getStaffingStatusVariant(
-                              selectedRide.currentStaffCount,
-                              selectedRide.staffRequired
-                            ) as
-                              | "default"
-                              | "secondary"
-                              | "destructive"
-                              | "outline"
-                              | "success"
-                              | "warning"
-                              | "info"
-                          }
-                        >
-                          {getStaffingStatus(
-                            selectedRide.currentStaffCount,
-                            selectedRide.staffRequired
-                          )}
-                        </Badge>
-                        <span className="text-sm">
-                          {selectedRide.currentStaffCount}/
-                          {selectedRide.staffRequired} staff members
-                        </span>
-                      </div>
+                <TabsContent value="edit" className="space-y-4 pt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Ride Name</Label>
+                      <Input
+                        id="name"
+                        value={editedRide.name}
+                        onChange={(e) =>
+                          handleEditChange("name", e.target.value)
+                        }
+                        className={errors.name ? "border-red-500" : ""}
+                      />
+                      {errors.name && (
+                        <p className="text-sm text-red-500">{errors.name}</p>
+                      )}
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setIsDetailsDialogOpen(false);
-                        handleOpenStaffDialog(selectedRide);
-                      }}
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Manage Staff
-                    </Button>
-                  </div>
 
-                  <div className="rounded-md border mt-2">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Shift</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {getRideStaff(selectedRide.id).length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
-                              No staff assigned to this ride.
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          getRideStaff(selectedRide.id).map((staffMember) => (
-                            <TableRow key={staffMember.id}>
-                              <TableCell className="font-medium">
-                                {staffMember.name}
-                              </TableCell>
-                              <TableCell>{staffMember.role}</TableCell>
-                              <TableCell>{staffMember.shift}</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    getStaffStatusBadgeVariant(
-                                      staffMember.status
-                                    ) as
-                                      | "default"
-                                      | "secondary"
-                                      | "destructive"
-                                      | "outline"
-                                      | "success"
-                                      | "warning"
-                                      | "info"
-                                  }
-                                >
-                                  {staffMember.status}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
+                    <div className="space-y-2">
+                      <Label htmlFor="location">Location</Label>
+                      <Input
+                        id="location"
+                        value={editedRide.location}
+                        onChange={(e) =>
+                          handleEditChange("location", e.target.value)
+                        }
+                        className={errors.location ? "border-red-500" : ""}
+                      />
+                      {errors.location && (
+                        <p className="text-sm text-red-500">
+                          {errors.location}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="capacity">Capacity</Label>
+                      <Input
+                        id="capacity"
+                        type="number"
+                        min="1"
+                        value={editedRide.capacity}
+                        onChange={(e) =>
+                          handleEditChange(
+                            "capacity",
+                            Number.parseInt(e.target.value) || 0
+                          )
+                        }
+                        className={errors.capacity ? "border-red-500" : ""}
+                      />
+                      {errors.capacity && (
+                        <p className="text-sm text-red-500">
+                          {errors.capacity}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="price">Price ($)</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={editedRide.price}
+                        onChange={(e) =>
+                          handleEditChange(
+                            "price",
+                            Number.parseFloat(e.target.value) || 0
+                          )
+                        }
+                        className={errors.price ? "border-red-500" : ""}
+                      />
+                      {errors.price && (
+                        <p className="text-sm text-red-500">{errors.price}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 col-span-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={editedRide.description}
+                        onChange={(e) =>
+                          handleEditChange("description", e.target.value)
+                        }
+                        className={errors.description ? "border-red-500" : ""}
+                        rows={3}
+                      />
+                      {errors.description && (
+                        <p className="text-sm text-red-500">
+                          {errors.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="col-span-2 flex justify-end">
+                      <Button onClick={handleSaveEdit} className="mt-4">
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Changes
+                      </Button>
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
@@ -545,17 +517,12 @@ export function RideInformation({
             >
               Close
             </Button>
-            <Button
-              onClick={() => {
-                setIsDetailsDialogOpen(false);
-                if (selectedRide) {
-                  onEditRide(selectedRide);
-                }
-              }}
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Ride
-            </Button>
+            {activeTab !== "edit" && (
+              <Button onClick={() => setActiveTab("edit")}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Ride
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -576,7 +543,8 @@ export function RideInformation({
                   <img
                     src={
                       selectedRide.image ||
-                      "/placeholder.svg?height=50&width=50"
+                      "/placeholder.svg?height=50&width=50" ||
+                      "/placeholder.svg"
                     }
                     alt={selectedRide.name}
                     className="h-full w-full object-cover"
@@ -591,42 +559,20 @@ export function RideInformation({
               </div>
 
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-sm font-medium">Current Staff</h4>
-                  <Badge
-                    variant={
-                      getStaffingStatusVariant(
-                        selectedRide.currentStaffCount,
-                        selectedRide.staffRequired
-                      ) as
-                        | "default"
-                        | "secondary"
-                        | "destructive"
-                        | "outline"
-                        | "success"
-                        | "warning"
-                        | "info"
-                    }
-                  >
-                    {selectedRide.currentStaffCount}/
-                    {selectedRide.staffRequired}
-                  </Badge>
-                </div>
-
+                <h4 className="text-sm font-medium">Current Staff</h4>
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Role</TableHead>
-                        <TableHead>Shift</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {getRideStaff(selectedRide.id).length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="h-12 text-center">
+                          <TableCell colSpan={3} className="h-12 text-center">
                             No staff assigned.
                           </TableCell>
                         </TableRow>
@@ -637,7 +583,6 @@ export function RideInformation({
                               {staffMember.name}
                             </TableCell>
                             <TableCell>{staffMember.role}</TableCell>
-                            <TableCell>{staffMember.shift}</TableCell>
                             <TableCell>
                               <Badge
                                 variant={
@@ -664,22 +609,30 @@ export function RideInformation({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Assign New Staff Member</h4>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={selectedStaffId}
-                  onChange={(e) => setSelectedStaffId(e.target.value)}
-                >
-                  <option value="">Select a staff member</option>
-                  {getAvailableStaff().map((staffMember) => (
-                    <option key={staffMember.id} value={staffMember.id}>
-                      {staffMember.name} - {staffMember.role} (
-                      {staffMember.status})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {!selectedRide.staffId ? (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">
+                    Assign New Staff Member
+                  </h4>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={selectedStaffId}
+                    onChange={(e) => setSelectedStaffId(e.target.value)}
+                  >
+                    <option value="">Select a staff member</option>
+                    {getAvailableStaff().map((staffMember) => (
+                      <option key={staffMember.id} value={staffMember.id}>
+                        {staffMember.name} - {staffMember.role} (
+                        {staffMember.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground italic">
+                  This ride already has a staff assigned.
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
@@ -689,7 +642,10 @@ export function RideInformation({
             >
               Cancel
             </Button>
-            <Button onClick={handleAssignStaff} disabled={!selectedStaffId}>
+            <Button
+              onClick={handleAssignStaff}
+              disabled={!selectedStaffId || !!selectedRide?.staffId}
+            >
               Assign Staff
             </Button>
           </DialogFooter>

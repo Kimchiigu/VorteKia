@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub ride_id: String,
+    pub staff_id: Option<String>,
     pub name: String,
     #[sea_orm(column_type = "Double")]
     pub price: f64,
@@ -26,6 +27,8 @@ pub enum Relation {
     Maintenance,
     #[sea_orm(has_many = "super::queue::Entity")]
     Queue,
+    #[sea_orm(has_many = "super::report::Entity")]
+    Report,
 }
 
 impl Related<super::maintenance::Entity> for Entity {
@@ -37,6 +40,12 @@ impl Related<super::maintenance::Entity> for Entity {
 impl Related<super::queue::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Queue.def()
+    }
+}
+
+impl Related<super::report::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Report.def()
     }
 }
 

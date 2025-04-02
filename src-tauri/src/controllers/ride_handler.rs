@@ -13,6 +13,7 @@ use crate::{ApiResponse, cache_get, cache_set, cache_delete, AppState};
 #[derive(Serialize, Deserialize)]
 pub struct RideResponse {
     ride_id: String,
+    staff_id: Option<String>,
     name: String,
     price: f64,
     description: String,
@@ -34,6 +35,7 @@ pub async fn view_all_rides(
             .into_iter()
             .map(|r| RideResponse {
                 ride_id: r.ride_id.clone(),
+                staff_id: r.staff_id.clone(),
                 name: r.name,
                 price: r.price,
                 description: r.description,
@@ -60,6 +62,7 @@ pub async fn view_all_rides(
 
         ride_responses.push(RideResponse {
             ride_id: ride.ride_id,
+            staff_id: ride.staff_id,
             name: ride.name,
             price: ride.price,
             description: ride.description,
@@ -90,6 +93,7 @@ pub async fn view_ride(
         Ok(Some(ride)) => {
             let formatted_ride = RideResponse {
                 ride_id: ride.ride_id,
+                staff_id: ride.staff_id,
                 name: ride.name,
                 price: ride.price,
                 description: ride.description,
@@ -112,6 +116,7 @@ pub async fn view_ride(
 #[derive(Deserialize)]
 pub struct CreateRideRequest {
     pub ride_id: String,
+    pub staff_id: Option<String>,
     pub name: String,
     pub price: f64,
     pub image: Vec<u8>,
@@ -129,6 +134,7 @@ pub async fn create_ride(
 ) -> Result<ApiResponse<ride::Model>, String> {
     let new_ride = RideActiveModel {
         ride_id: Set(payload.ride_id),
+        staff_id: Set(payload.staff_id),
         name: Set(payload.name),
         price: Set(payload.price),
         image: Set(payload.image),
@@ -152,6 +158,7 @@ pub async fn create_ride(
 #[derive(Deserialize)]
 pub struct UpdateRideRequest {
     pub ride_id: String,
+    pub staff_id: Option<String>,
     pub name: String,
     pub price: f64,
     pub image: Vec<u8>,
@@ -170,6 +177,7 @@ pub async fn update_ride(
     match Ride::find_by_id(payload.ride_id.clone()).one(&state.db).await {
         Ok(Some(existing_ride)) => {
             let mut active_ride: RideActiveModel = existing_ride.into();
+            active_ride.staff_id = Set(payload.staff_id);
             active_ride.name = Set(payload.name);
             active_ride.price = Set(payload.price);
             active_ride.image = Set(payload.image);
