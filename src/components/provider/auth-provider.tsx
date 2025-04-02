@@ -50,6 +50,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.user_id]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    let timer: NodeJS.Timeout;
+
+    const resetTimer = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        logout();
+      }, 60000);
+    };
+
+    const events = ["mousemove", "keydown", "scroll", "click"];
+    events.forEach((event) => window.addEventListener(event, resetTimer));
+
+    resetTimer();
+
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, resetTimer));
+      if (timer) clearTimeout(timer);
+    };
+  }, [user]);
+
   const login = async (uid: string): Promise<boolean> => {
     try {
       console.log("Trying login");
