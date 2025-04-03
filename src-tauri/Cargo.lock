@@ -5990,9 +5990,11 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "tao",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
+ "tauri-runtime-wry",
  "tokio",
  "uuid",
 ]

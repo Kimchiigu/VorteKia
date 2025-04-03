@@ -1,6 +1,6 @@
+"use client";
+
 import { useState } from "react";
-import { Navbar } from "@/components/navbar/navbar";
-import { HeroStaff } from "@/components/staff/hero-staff";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ScheduleManagement,
@@ -8,6 +8,8 @@ import {
   type Staff,
   type TaskStatus,
 } from "@/components/staff/schedule-management";
+import { MaintenanceChat } from "@/components/staff/ride-manager/maintenance-chat";
+import { OfficialChatInterface } from "@/components/staff/customer-service/official-chat-interface";
 
 // Dummy data for maintenance tasks
 const maintenanceTasks: MaintenanceTask[] = [
@@ -193,30 +195,34 @@ export default function MaintenanceManager() {
 
   return (
     <main className="min-h-screen w-full bg-background">
-        <div className="mt-12 space-y-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="schedule">Schedule Management</TabsTrigger>
-              <TabsTrigger value="reports">Maintenance Reports</TabsTrigger>
-            </TabsList>
-            <TabsContent value="schedule" className="mt-6">
-              <ScheduleManagement
-                tasks={tasks}
-                availableStaff={staff}
-                role="manager"
-                onAssignTask={handleAssignTask}
-                onUpdateTaskStatus={handleUpdateTaskStatus}
-              />
-            </TabsContent>
-            <TabsContent value="reports" className="mt-6">
-              <h2 className="text-2xl font-bold mb-4">Maintenance Reports</h2>
-              <p className="text-muted-foreground">
-                This section would use the report-list.tsx component to display
-                and manage maintenance reports.
-              </p>
-            </TabsContent>
-          </Tabs>
-        </div>
+      <div className="mt-12 space-y-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="schedule">Schedule Management</TabsTrigger>
+            <TabsTrigger value="reports">Maintenance Reports</TabsTrigger>
+            <TabsTrigger value="chat">Chat with Ride Manager</TabsTrigger>
+          </TabsList>
+          <TabsContent value="schedule" className="mt-6">
+            <ScheduleManagement
+              tasks={tasks}
+              availableStaff={staff}
+              role="manager"
+              onAssignTask={handleAssignTask}
+              onUpdateTaskStatus={handleUpdateTaskStatus}
+            />
+          </TabsContent>
+          <TabsContent value="reports" className="mt-6">
+            <h2 className="text-2xl font-bold mb-4">Maintenance Reports</h2>
+            <p className="text-muted-foreground">
+              This section would use the report-list.tsx component to display
+              and manage maintenance reports.
+            </p>
+          </TabsContent>
+          <TabsContent value="chat" className="mt-6">
+            <OfficialChatInterface userId="" />
+          </TabsContent>
+        </Tabs>
+      </div>
     </main>
   );
 }

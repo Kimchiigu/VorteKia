@@ -233,6 +233,40 @@ pub async fn get_all_users_lite(
     }
 }
 
+#[derive(Serialize)]
+pub struct RideStaffResponse {
+    pub user_id: String,
+    pub name: String,
+    pub role: String,
+    pub status: Option<String>,
+}
+
+#[tauri::command]
+pub async fn get_all_ride_staff(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<RideStaffResponse>>, String> {
+    match User::find()
+        .filter(user::Column::Role.eq("Ride Staff"))
+        .all(&state.db)
+        .await
+    {
+        Ok(users) => {
+            let response: Vec<RideStaffResponse> = users
+                .into_iter()
+                .map(|user| RideStaffResponse {
+                    user_id: user.user_id,
+                    name: user.name,
+                    role: user.role,
+                    status: user.status,
+                })
+                .collect();
+
+            Ok(ApiResponse::success(response))
+        }
+        Err(err) => Ok(ApiResponse::error(format!("Database error: {}", err))),
+    }
+}
+
 #[tauri::command]
 pub async fn get_user_lite_by_id(
     state: State<'_, AppState>,
@@ -289,6 +323,7 @@ pub async fn create_customer(
         balance: Set(payload.balance),
         role: Set("Customer".to_string()),
         password: Set(None),
+        status: Set(None),
         restaurant_id: Set(None),
     };
 
@@ -307,4 +342,3 @@ pub async fn create_customer(
         Err(err) => Ok(ApiResponse::error(format!("Failed to create customer: {}", err))),
     }
 }
-

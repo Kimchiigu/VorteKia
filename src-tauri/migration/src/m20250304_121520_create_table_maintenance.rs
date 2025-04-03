@@ -13,21 +13,29 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(ColumnDef::new(Maintenance::MaintenanceID).string().not_null().primary_key())
                     .col(ColumnDef::new(Maintenance::RideID).string().not_null())
-                    .col(ColumnDef::new(Maintenance::Description).string().not_null())
+                    .col(ColumnDef::new(Maintenance::Type).string().not_null())
+                    .col(ColumnDef::new(Maintenance::Issue).string().not_null())
+                    .col(ColumnDef::new(Maintenance::Date).string().not_null())
                     .col(ColumnDef::new(Maintenance::Status).string().not_null())
-                    .col(ColumnDef::new(Maintenance::Date).date().not_null())
-                    .col(ColumnDef::new(Maintenance::AssignedStaffID).string().not_null())
+                    .col(ColumnDef::new(Maintenance::MaintenanceStaffID).string().null())
+                    .col(ColumnDef::new(Maintenance::SenderID).string().not_null())
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_maintenance_user")
+                            .from(Maintenance::Table, Maintenance::SenderID)
+                            .to(User::Table, User::UserID),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_maintenance_staff")
+                            .from(Maintenance::Table, Maintenance::MaintenanceStaffID)
+                            .to(User::Table, User::UserID),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_maintenance_ride")
                             .from(Maintenance::Table, Maintenance::RideID)
                             .to(Ride::Table, Ride::RideID),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .name("fk_maintenance_user")
-                            .from(Maintenance::Table, Maintenance::AssignedStaffID)
-                            .to(User::Table, User::UserID),
                     )
                     .to_owned(),
             )
@@ -49,21 +57,23 @@ impl MigrationTrait for Migration {
 enum Maintenance {
     Table,
     MaintenanceID,
+    Type,
     RideID,
-    Description,
     Status,
+    Issue,
+    MaintenanceStaffID,
+    SenderID,
     Date,
-    AssignedStaffID,
-}
-
-#[derive(Iden)]
-enum Ride {
-    Table,
-    RideID,
 }
 
 #[derive(Iden)]
 enum User {
     Table,
     UserID,
+}
+
+#[derive(Iden)]
+enum Ride {
+    Table,
+    RideID,
 }

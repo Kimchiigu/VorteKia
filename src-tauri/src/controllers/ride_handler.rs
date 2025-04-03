@@ -13,6 +13,7 @@ use crate::{ApiResponse, cache_get, cache_set, cache_delete, AppState};
 #[derive(Serialize, Deserialize)]
 pub struct RideResponse {
     ride_id: String,
+    staff_id: Option<String>,
     name: String,
     price: f64,
     description: String,
@@ -26,6 +27,7 @@ pub struct RideResponse {
 #[derive(Serialize, Deserialize)]
 struct RideCache {
     ride_id: String,
+    staff_id: Option<String>,
     name: String,
     price: f64,
     description: String,
@@ -48,6 +50,7 @@ pub async fn view_all_rides(
             if let Ok(Some(model)) = Ride::find_by_id(ride_cache.ride_id.clone()).one(&state.db).await {
                 ride_responses.push(RideResponse {
                     ride_id: ride_cache.ride_id,
+                    staff_id: ride_cache.staff_id,
                     name: ride_cache.name,
                     price: ride_cache.price,
                     description: ride_cache.description,
@@ -70,6 +73,7 @@ pub async fn view_all_rides(
     for ride in rides {
         ride_responses.push(RideResponse {
             ride_id: ride.ride_id.clone(),
+            staff_id: ride.staff_id.clone(),
             name: ride.name.clone(),
             price: ride.price,
             description: ride.description.clone(),
@@ -82,6 +86,7 @@ pub async fn view_all_rides(
 
         cache_data.push(RideCache {
             ride_id: ride.ride_id,
+            staff_id: ride.staff_id,
             name: ride.name,
             price: ride.price,
             description: ride.description,
@@ -111,6 +116,7 @@ pub async fn view_ride(
         Ok(Some(ride)) => {
             let formatted_ride = RideResponse {
                 ride_id: ride.ride_id,
+                staff_id: ride.staff_id,
                 name: ride.name,
                 price: ride.price,
                 description: ride.description,

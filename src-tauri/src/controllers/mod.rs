@@ -11,3 +11,7 @@ pub mod lost_and_found_handler;
 pub mod chat_handler;
 pub mod official_chat_handler;
 pub mod broadcast_handler;
+pub mod proposal_handler;
+pub mod ride_manager_handler;
+pub mod maintenance_handler;
+pub mod official_chat_maintenance_handler;

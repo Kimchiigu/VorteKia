@@ -16,13 +16,12 @@ pub struct Model {
     pub role: String,
     #[sea_orm(column_type = "Double")]
     pub balance: f64,
+    pub status: Option<String>,
     pub restaurant_id: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::maintenance::Entity")]
-    Maintenance,
     #[sea_orm(has_many = "super::message::Entity")]
     Message,
     #[sea_orm(has_many = "super::notification::Entity")]
@@ -33,8 +32,6 @@ pub enum Relation {
     Proposal,
     #[sea_orm(has_many = "super::queue::Entity")]
     Queue,
-    #[sea_orm(has_many = "super::report::Entity")]
-    Report,
     #[sea_orm(
         belongs_to = "super::restaurant::Entity",
         from = "Column::RestaurantId",
@@ -45,12 +42,6 @@ pub enum Relation {
     Restaurant,
     #[sea_orm(has_many = "super::store::Entity")]
     Store,
-}
-
-impl Related<super::maintenance::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Maintenance.def()
-    }
 }
 
 impl Related<super::message::Entity> for Entity {
@@ -80,12 +71,6 @@ impl Related<super::proposal::Entity> for Entity {
 impl Related<super::queue::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Queue.def()
-    }
-}
-
-impl Related<super::report::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Report.def()
     }
 }
 
