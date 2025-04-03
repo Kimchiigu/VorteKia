@@ -97,7 +97,7 @@ export default function SouvenirSection() {
     if (!selectedSouvenir) return;
 
     try {
-      const orderId = `order_${Date.now()}`;
+      const orderId = `ORD_${Date.now()}`;
       console.log("Creating order...");
 
       await invoke("create_order", {

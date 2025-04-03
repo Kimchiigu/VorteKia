@@ -21,29 +21,44 @@ pub struct RestaurantResponse {
     operational_end_hours: String,
 }
 
+#[derive(Serialize, Deserialize)]
+struct RestaurantCache {
+    restaurant_id: String,
+    name: String,
+    description: String,
+    cuisine_type: String,
+    location: String,
+    operational_status: String,
+    operational_start_hours: String,
+    operational_end_hours: String,
+}
+
 #[tauri::command]
 pub async fn view_all_restaurants(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<RestaurantResponse>>, String> {
     let cache_key = "get_all_restaurants_cache";
 
-    if let Some(cached_restaurants) = cache_get::<Vec<restaurant::Model>>(&state.redis_pool, cache_key).await {
-        let formatted_restaurants: Vec<RestaurantResponse> = cached_restaurants
-            .into_iter()
-            .map(|r| RestaurantResponse {
-                restaurant_id: r.restaurant_id,
-                name: r.name,
-                description: r.description,
-                cuisine_type: r.cuisine_type,
-                image: encode(&r.image),
-                location: r.location,
-                operational_status: r.operational_status,
-                operational_start_hours: r.operational_start_hours,
-                operational_end_hours: r.operational_end_hours,
-            })
-            .collect();
+    if let Some(cached_restaurants) = cache_get::<Vec<RestaurantCache>>(&state.redis_pool, cache_key).await {
+        let mut full_restaurants = vec![];
 
-        return Ok(ApiResponse::success(formatted_restaurants));
+        for cache in cached_restaurants {
+            if let Ok(Some(model)) = Restaurant::find_by_id(cache.restaurant_id.clone()).one(&state.db).await {
+                full_restaurants.push(RestaurantResponse {
+                    restaurant_id: cache.restaurant_id,
+                    name: cache.name,
+                    description: cache.description,
+                    cuisine_type: cache.cuisine_type,
+                    image: encode(&model.image),
+                    location: cache.location,
+                    operational_status: cache.operational_status,
+                    operational_start_hours: cache.operational_start_hours,
+                    operational_end_hours: cache.operational_end_hours,
+                });
+            }
+        }
+
+        return Ok(ApiResponse::success(full_restaurants));
     }
 
     match Restaurant::find()
@@ -52,14 +67,28 @@ pub async fn view_all_restaurants(
         .await
     {
         Ok(restaurants) => {
-            let formatted_restaurants: Vec<RestaurantResponse> = restaurants
-                .into_iter()
+            let full_response: Vec<RestaurantResponse> = restaurants
+                .iter()
                 .map(|r| RestaurantResponse {
+                    restaurant_id: r.restaurant_id.clone(),
+                    name: r.name.clone(),
+                    description: r.description.clone(),
+                    cuisine_type: r.cuisine_type.clone(),
+                    image: encode(&r.image),
+                    location: r.location.clone(),
+                    operational_status: r.operational_status.clone(),
+                    operational_start_hours: r.operational_start_hours.clone(),
+                    operational_end_hours: r.operational_end_hours.clone(),
+                })
+                .collect();
+
+            let cache_data: Vec<RestaurantCache> = restaurants
+                .into_iter()
+                .map(|r| RestaurantCache {
                     restaurant_id: r.restaurant_id,
                     name: r.name,
                     description: r.description,
                     cuisine_type: r.cuisine_type,
-                    image: encode(&r.image),
                     location: r.location,
                     operational_status: r.operational_status,
                     operational_start_hours: r.operational_start_hours,
@@ -67,8 +96,9 @@ pub async fn view_all_restaurants(
                 })
                 .collect();
 
-            cache_set(&state.redis_pool, cache_key, &formatted_restaurants, 60).await;
-            Ok(ApiResponse::success(formatted_restaurants))
+            cache_set(&state.redis_pool, cache_key, &cache_data, 60).await;
+
+            Ok(ApiResponse::success(full_response))
         }
         Err(err) => {
             println!("Database error: {:?}", err);
@@ -76,7 +106,6 @@ pub async fn view_all_restaurants(
         }
     }
 }
-
 
 #[derive(Deserialize)]
 pub struct CreateRestaurantRequest {

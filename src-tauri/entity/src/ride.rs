@@ -18,6 +18,8 @@ pub struct Model {
     pub status: String,
     pub capacity: i32,
     pub maintenance_status: String,
+    pub operational_start_hours: String,
+    pub operational_end_hours: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

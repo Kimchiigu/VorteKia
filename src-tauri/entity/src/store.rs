@@ -14,6 +14,8 @@ pub struct Model {
     pub image: Vec<u8>,
     pub description: String,
     pub operational_status: String,
+    pub operational_start_hours: String,
+    pub operational_end_hours: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

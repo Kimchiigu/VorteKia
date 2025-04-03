@@ -135,7 +135,7 @@ export default function MenuSection() {
               <div className="aspect-video w-full overflow-hidden rounded-t-lg">
                 <img
                   src={
-                    menu.image
+                    menu.image && menu.image.trim() !== ""
                       ? `data:image/png;base64,${menu.image}`
                       : "/placeholder.svg?height=200&width=400"
                   }

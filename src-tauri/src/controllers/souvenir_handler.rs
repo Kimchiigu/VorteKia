@@ -17,27 +17,40 @@ pub struct SouvenirResponse {
     pub stock: i32,
 }
 
+#[derive(Serialize, Deserialize)]
+struct SouvenirCache {
+    pub souvenir_id: String,
+    pub store_id: String,
+    pub name: String,
+    pub description: String,
+    pub price: f64,
+    pub stock: i32,
+}
+
 #[tauri::command]
 pub async fn view_all_souvenirs(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<SouvenirResponse>>, String> {
     let cache_key = "get_all_souvenirs_cache";
 
-    if let Some(cached_souvenirs) = cache_get::<Vec<souvenir::Model>>(&state.redis_pool, cache_key).await {
-        let formatted_souvenirs: Vec<SouvenirResponse> = cached_souvenirs
-            .into_iter()
-            .map(|s| SouvenirResponse {
-                souvenir_id: s.souvenir_id,
-                store_id: s.store_id,
-                name: s.name,
-                description: s.description,
-                price: s.price,
-                stock: s.stock,
-                image: encode(&s.image),
-            })
-            .collect();
+    if let Some(cached_souvenirs) = cache_get::<Vec<SouvenirCache>>(&state.redis_pool, cache_key).await {
+        let mut full_souvenirs = vec![];
 
-        return Ok(ApiResponse::success(formatted_souvenirs));
+        for cache in cached_souvenirs {
+            if let Ok(Some(model)) = Souvenir::find_by_id(cache.souvenir_id.clone()).one(&state.db).await {
+                full_souvenirs.push(SouvenirResponse {
+                    souvenir_id: cache.souvenir_id,
+                    store_id: cache.store_id,
+                    name: cache.name,
+                    description: cache.description,
+                    price: cache.price,
+                    stock: cache.stock,
+                    image: encode(&model.image),
+                });
+            }
+        }
+
+        return Ok(ApiResponse::success(full_souvenirs));
     }
 
     match Souvenir::find()
@@ -46,21 +59,33 @@ pub async fn view_all_souvenirs(
         .await
     {
         Ok(souvenirs) => {
-            let formatted_souvenirs: Vec<SouvenirResponse> = souvenirs
-                .into_iter()
+            let full_responses: Vec<SouvenirResponse> = souvenirs
+                .iter()
                 .map(|s| SouvenirResponse {
-                    souvenir_id: s.souvenir_id,
-                    store_id: s.store_id,
-                    name: s.name,
-                    description: s.description,
+                    souvenir_id: s.souvenir_id.clone(),
+                    store_id: s.store_id.clone(),
+                    name: s.name.clone(),
+                    description: s.description.clone(),
                     price: s.price,
                     stock: s.stock,
                     image: encode(&s.image),
                 })
                 .collect();
 
-            cache_set(&state.redis_pool, cache_key, &formatted_souvenirs, 60).await;
-            Ok(ApiResponse::success(formatted_souvenirs))
+            let cache_data: Vec<SouvenirCache> = souvenirs
+                .into_iter()
+                .map(|s| SouvenirCache {
+                    souvenir_id: s.souvenir_id,
+                    store_id: s.store_id,
+                    name: s.name,
+                    description: s.description,
+                    price: s.price,
+                    stock: s.stock,
+                })
+                .collect();
+
+            cache_set(&state.redis_pool, cache_key, &cache_data, 60).await;
+            Ok(ApiResponse::success(full_responses))
         }
         Err(err) => Ok(ApiResponse::error(format!("Database error: {}", err))),
     }

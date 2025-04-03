@@ -17,26 +17,38 @@ pub struct StoreResponse {
     pub operational_status: String,
 }
 
+#[derive(Serialize, Deserialize)]
+struct StoreCache {
+    pub store_id: String,
+    pub sales_associate_id: String,
+    pub name: String,
+    pub description: String,
+    pub operational_status: String,
+}
+
 #[tauri::command]
 pub async fn view_all_stores(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<StoreResponse>>, String> {
     let cache_key = "get_all_stores_cache";
 
-    if let Some(cached_stores) = cache_get::<Vec<store::Model>>(&state.redis_pool, cache_key).await {
-        let formatted_stores: Vec<StoreResponse> = cached_stores
-            .into_iter()
-            .map(|s| StoreResponse {
-                store_id: s.store_id,
-                sales_associate_id: s.sales_associate_id,
-                name: s.name,
-                description: s.description,
-                operational_status: s.operational_status,
-                image: encode(&s.image),
-            })
-            .collect();
+    if let Some(cached_stores) = cache_get::<Vec<StoreCache>>(&state.redis_pool, cache_key).await {
+        let mut full_stores = vec![];
 
-        return Ok(ApiResponse::success(formatted_stores));
+        for cache in cached_stores {
+            if let Ok(Some(model)) = Store::find_by_id(cache.store_id.clone()).one(&state.db).await {
+                full_stores.push(StoreResponse {
+                    store_id: cache.store_id,
+                    sales_associate_id: cache.sales_associate_id,
+                    name: cache.name,
+                    description: cache.description,
+                    operational_status: cache.operational_status,
+                    image: encode(&model.image),
+                });
+            }
+        }
+
+        return Ok(ApiResponse::success(full_stores));
     }
 
     match Store::find()
@@ -45,20 +57,32 @@ pub async fn view_all_stores(
         .await
     {
         Ok(stores) => {
-            let formatted_stores: Vec<StoreResponse> = stores
-                .into_iter()
+            let full_responses: Vec<StoreResponse> = stores
+                .iter()
                 .map(|s| StoreResponse {
+                    store_id: s.store_id.clone(),
+                    sales_associate_id: s.sales_associate_id.clone(),
+                    name: s.name.clone(),
+                    description: s.description.clone(),
+                    operational_status: s.operational_status.clone(),
+                    image: encode(&s.image),
+                })
+                .collect();
+
+            let cache_data: Vec<StoreCache> = stores
+                .into_iter()
+                .map(|s| StoreCache {
                     store_id: s.store_id,
                     sales_associate_id: s.sales_associate_id,
                     name: s.name,
                     description: s.description,
                     operational_status: s.operational_status,
-                    image: encode(&s.image),
                 })
                 .collect();
 
-            cache_set(&state.redis_pool, cache_key, &formatted_stores, 60).await;
-            Ok(ApiResponse::success(formatted_stores))
+            cache_set(&state.redis_pool, cache_key, &cache_data, 60).await;
+
+            Ok(ApiResponse::success(full_responses))
         }
         Err(err) => Ok(ApiResponse::error(format!("Database error: {}", err))),
     }

@@ -18,28 +18,41 @@ pub struct MenuResponse {
     pub available_quantity: i32,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct MenuCache {
+    pub menu_id: String,
+    pub restaurant_id: String,
+    pub name: String,
+    pub description: String,
+    pub price: f64,
+    pub available_quantity: i32,
+}
+
 #[tauri::command]
 pub async fn view_all_menus(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<MenuResponse>>, String> {
     let cache_key = "get_all_menus_cache";
 
-    if let Some(cached_menus) = cache_get::<Vec<menu::Model>>(&state.redis_pool, cache_key).await {
-        let formatted_menus: Vec<MenuResponse> = cached_menus
-            .into_iter()
-            .map(|m| MenuResponse {
-                menu_id: m.menu_id,
-                restaurant_id: m.restaurant_id,
-                name: m.name,
-                description: m.description,
-                price: m.price,
-                available_quantity: m.available_quantity,
-                image: encode(&m.image),
-            })
-            .collect();
+    if let Some(cached_menus) = cache_get::<Vec<MenuCache>>(&state.redis_pool, cache_key).await {
+        let mut full_menus = vec![];
 
-        println!("Cache hit: Returning menus from Redis");
-        return Ok(ApiResponse::success(formatted_menus));
+        for cache in cached_menus {
+            if let Ok(Some(model)) = Menu::find_by_id(cache.menu_id.clone()).one(&state.db).await {
+                full_menus.push(MenuResponse {
+                    menu_id: cache.menu_id,
+                    restaurant_id: cache.restaurant_id,
+                    name: cache.name,
+                    description: cache.description,
+                    price: cache.price,
+                    available_quantity: cache.available_quantity,
+                    image: encode(&model.image),
+                });
+            }
+        }
+
+        println!("Cache hit: Returning menus from Redis (reconstructed from DB)");
+        return Ok(ApiResponse::success(full_menus));
     }
 
     println!("Cache miss: Querying database");
@@ -51,19 +64,32 @@ pub async fn view_all_menus(
     {
         Ok(menus) => {
             let formatted_menus: Vec<MenuResponse> = menus
-                .into_iter()
+                .iter()
                 .map(|m| MenuResponse {
-                    menu_id: m.menu_id,
-                    restaurant_id: m.restaurant_id,
-                    name: m.name,
-                    description: m.description,
+                    menu_id: m.menu_id.clone(),
+                    restaurant_id: m.restaurant_id.clone(),
+                    name: m.name.clone(),
+                    description: m.description.clone(),
                     price: m.price,
                     available_quantity: m.available_quantity,
                     image: encode(&m.image),
                 })
                 .collect();
 
-            cache_set(&state.redis_pool, cache_key, &formatted_menus, 60).await;
+            let cache_data: Vec<MenuCache> = menus
+                .into_iter()
+                .map(|m| MenuCache {
+                    menu_id: m.menu_id,
+                    restaurant_id: m.restaurant_id,
+                    name: m.name,
+                    description: m.description,
+                    price: m.price,
+                    available_quantity: m.available_quantity,
+                })
+                .collect();
+
+            cache_set(&state.redis_pool, cache_key, &cache_data, 60).await;
+
             Ok(ApiResponse::success(formatted_menus))
         }
         Err(err) => {

@@ -21,6 +21,8 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Ride::Status).string().not_null())
                     .col(ColumnDef::new(Ride::Capacity).integer().not_null())
                     .col(ColumnDef::new(Ride::MaintenanceStatus).string().not_null())
+                    .col(ColumnDef::new(Ride::OperationalStartHours).string().not_null())
+                    .col(ColumnDef::new(Ride::OperationalEndHours).string().not_null())
                     .to_owned(),
             )
             .await?;
@@ -38,26 +40,32 @@ impl MigrationTrait for Migration {
                     .columns([
                         Ride::RideID, Ride::Name, Ride::Price, Ride::Image, Ride::Description,
                         Ride::Location, Ride::Status, Ride::Capacity, Ride::MaintenanceStatus,
+                        Ride::OperationalStartHours, Ride::OperationalEndHours,
                     ])
                     .values_panic([ 
                         "RI001".into(), "Horse Carousel".into(), 15.99.into(), ride1_img.into(),
                         "A classic family ride that spins children and adults around on decorated horses.".into(), "Main Plaza".into(), "Open".into(), 20.into(), "Available".into(),
+                        "08:00:00".into(), "18:00:00".into()
                     ])
                     .values_panic([ 
                         "RI002".into(), "Spinning Swing".into(), 8.99.into(), ride2_img.into(),
                         "Feel the breeze as the swing rotates high above, providing a thrilling view of the park.".into(), "Adventure Zone".into(), "Closed".into(), 30.into(), "Pending".into(),
+                        "08:00:00".into(), "18:00:00".into()
                     ])
                     .values_panic([ 
                         "RI003".into(), "Boom Boom Car".into(), 11.99.into(), ride3_img.into(),
                         "A fun ride where you can bump into other cars, perfect for the whole family.".into(), "Family Area".into(), "Open".into(), 15.into(), "Available".into(),
+                        "08:00:00".into(), "18:00:00".into()
                     ])
                     .values_panic([ 
                         "RI004".into(), "Ferris Wheel".into(), 24.99.into(), ride4_img.into(),
                         "Take in the breathtaking view of the entire park while floating high above on this iconic ride.".into(), "Skyline View".into(), "Open".into(), 15.into(), "Available".into(),
+                        "08:00:00".into(), "18:00:00".into()
                     ])
                     .values_panic([ 
                         "RI005".into(), "Roller Coaster".into(), 32.99.into(), ride5_img.into(),
                         "A high-speed coaster with twists, turns, and drops that will get your adrenaline pumping.".into(), "Extreme Zone".into(), "Closed".into(), 15.into(), "In Progress".into(),
+                        "08:00:00".into(), "18:00:00".into()
                     ])
                     .to_owned(),
             )
@@ -87,4 +95,6 @@ enum Ride {
     Status,
     Capacity,
     MaintenanceStatus,
+    OperationalStartHours,
+    OperationalEndHours,
 }

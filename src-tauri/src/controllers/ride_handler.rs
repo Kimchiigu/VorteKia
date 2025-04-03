@@ -23,42 +23,64 @@ pub struct RideResponse {
     image: String,
 }
 
+#[derive(Serialize, Deserialize)]
+struct RideCache {
+    ride_id: String,
+    name: String,
+    price: f64,
+    description: String,
+    location: String,
+    status: String,
+    capacity: i32,
+    maintenance_status: String,
+}
+
 #[tauri::command]
 pub async fn view_all_rides(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<RideResponse>>, String> {
     let cache_key = "get_all_rides_cache";
 
-    if let Some(cached_rides) = cache_get::<Vec<ride::Model>>(&state.redis_pool, cache_key).await {
-        let formatted_rides: Vec<RideResponse> = cached_rides
-            .into_iter()
-            .map(|r| RideResponse {
-                ride_id: r.ride_id.clone(),
-                name: r.name,
-                price: r.price,
-                description: r.description,
-                location: r.location,
-                status: r.status,
-                capacity: r.capacity,
-                maintenance_status: r.maintenance_status,
-                image: encode(&r.image),
-            })
-            .collect();
+    if let Some(cached_rides) = cache_get::<Vec<RideCache>>(&state.redis_pool, cache_key).await {
+        let mut ride_responses = Vec::new();
 
-        return Ok(ApiResponse::success(formatted_rides));
+        for ride_cache in cached_rides {
+            if let Ok(Some(model)) = Ride::find_by_id(ride_cache.ride_id.clone()).one(&state.db).await {
+                ride_responses.push(RideResponse {
+                    ride_id: ride_cache.ride_id,
+                    name: ride_cache.name,
+                    price: ride_cache.price,
+                    description: ride_cache.description,
+                    location: ride_cache.location,
+                    status: ride_cache.status,
+                    capacity: ride_cache.capacity,
+                    maintenance_status: ride_cache.maintenance_status,
+                    image: encode(&model.image),
+                });
+            }
+        }
+
+        return Ok(ApiResponse::success(ride_responses));
     }
 
     let rides = Ride::find().all(&state.db).await.map_err(|err| err.to_string())?;
     let mut ride_responses = Vec::new();
+    let mut cache_data = Vec::new();
 
     for ride in rides {
-        let queue_count = Queue::find()
-            .filter(queue::Column::RideId.eq(ride.ride_id.clone()))
-            .count(&state.db)
-            .await
-            .map_err(|err| err.to_string())?;
-
         ride_responses.push(RideResponse {
+            ride_id: ride.ride_id.clone(),
+            name: ride.name.clone(),
+            price: ride.price,
+            description: ride.description.clone(),
+            location: ride.location.clone(),
+            status: ride.status.clone(),
+            capacity: ride.capacity,
+            maintenance_status: ride.maintenance_status.clone(),
+            image: encode(&ride.image),
+        });
+
+        cache_data.push(RideCache {
             ride_id: ride.ride_id,
             name: ride.name,
             price: ride.price,
@@ -67,11 +89,10 @@ pub async fn view_all_rides(
             status: ride.status,
             capacity: ride.capacity,
             maintenance_status: ride.maintenance_status,
-            image: encode(&ride.image),
         });
     }
 
-    cache_set(&state.redis_pool, cache_key, &ride_responses, 60).await;
+    cache_set(&state.redis_pool, cache_key, &cache_data, 60).await;
     Ok(ApiResponse::success(ride_responses))
 }
 

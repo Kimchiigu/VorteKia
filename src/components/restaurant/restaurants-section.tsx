@@ -53,6 +53,10 @@ export function RestaurantsSection({ pageType }: OrderSectionProps) {
         );
 
         if (response && response.data) {
+          console.log(
+            "Restaurant image preview:",
+            response.data[0].image?.slice(0, 100)
+          ); // ✅ Tambahin ini
           setRestaurants(response.data);
         } else {
           console.error("Invalid response format:", response);
@@ -138,7 +142,7 @@ export function RestaurantsSection({ pageType }: OrderSectionProps) {
                 <div className="aspect-video w-full overflow-hidden">
                   <img
                     src={
-                      restaurant.image
+                      restaurant.image && restaurant.image.trim() !== ""
                         ? `data:image/png;base64,${restaurant.image}`
                         : "/placeholder.svg?height=200&width=400"
                     }
