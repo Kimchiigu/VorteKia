@@ -1,131 +1,123 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type React from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, CheckCircle } from "lucide-react";
+import { Send } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
-export interface MaintenanceMessage {
-  id: string;
-  senderId: string;
-  senderName: string;
-  senderRole: string;
+interface Message {
+  message_id: string;
   content: string;
+  sender_id: string;
   timestamp: string;
-  isRead: boolean;
+  status: "sent" | "read";
+  message_type: "staff" | "maintenance";
 }
 
 interface MaintenanceChatProps {
-  staffId: string;
-  staffName: string;
+  rideManagerId: string;
 }
 
-export function MaintenanceChat({ staffId, staffName }: MaintenanceChatProps) {
-  const [messages, setMessages] = useState<MaintenanceMessage[]>([
-    {
-      id: "msg1",
-      senderId: "maint-001",
-      senderName: "John Maintenance",
-      senderRole: "Maintenance Manager",
-      content: "Hello! How can the Care & Maintenance Division help you today?",
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      isRead: true,
-    },
-    {
-      id: "msg2",
-      senderId: staffId,
-      senderName: staffName,
-      senderRole: "Ride Manager",
-      content:
-        "I have a question about the maintenance schedule for the Thunderbolt Roller Coaster.",
-      timestamp: new Date(Date.now() - 1800000).toISOString(),
-      isRead: true,
-    },
-    {
-      id: "msg3",
-      senderId: "maint-001",
-      senderName: "John Maintenance",
-      senderRole: "Maintenance Manager",
-      content:
-        "Of course! The Thunderbolt is scheduled for routine maintenance next Tuesday from 8 AM to 12 PM. Is there a specific concern you'd like to address?",
-      timestamp: new Date(Date.now() - 900000).toISOString(),
-      isRead: true,
-    },
-  ]);
-
-  const [newMessage, setNewMessage] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+export function MaintenanceChat({ rideManagerId }: MaintenanceChatProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [messageInput, setMessageInput] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [staffStatus, setStaffStatus] = useState<"online" | "offline" | "away">(
+    "online"
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleSendMessage = () => {
-    if (newMessage.trim() === "") return;
-
-    const userMessage: MaintenanceMessage = {
-      id: `msg-${Date.now()}`,
-      senderId: staffId,
-      senderName: staffName,
-      senderRole: "Ride Manager",
-      content: newMessage,
-      timestamp: new Date().toISOString(),
-      isRead: true,
+    const fetchMessages = async () => {
+      try {
+        const response = await invoke("fetch_maintenance_chat_messages", {
+          rideManagerId: rideManagerId,
+        });
+        setMessages(response as Message[]);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
     };
 
-    setMessages([...messages, userMessage]);
-    setNewMessage("");
+    fetchMessages();
+  }, [rideManagerId]);
 
-    // Simulate maintenance staff typing
-    setIsTyping(true);
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
 
-    // Simulate response after delay
-    setTimeout(() => {
-      setIsTyping(false);
+    const setupListener = async () => {
+      try {
+        const fn = await listen(
+          "firestore-maintenance-chat-update",
+          (event) => {
+            const payload = event.payload as { type: string; message: Message };
+            if (
+              payload.message &&
+              payload.message.sender_id !== rideManagerId
+            ) {
+              setUnreadCount((prev) => prev + 1);
+            }
+            setMessages((prev) => [...prev, payload.message]);
+          }
+        );
 
-      const responseMessage: MaintenanceMessage = {
-        id: `msg-${Date.now() + 1}`,
-        senderId: "maint-001",
-        senderName: "John Maintenance",
-        senderRole: "Maintenance Manager",
-        content: getAutomaticResponse(newMessage),
-        timestamp: new Date().toISOString(),
-        isRead: true,
-      };
+        await invoke("listen_to_maintenance_chat", {
+          rideManagerId: rideManagerId,
+        });
 
-      setMessages((prev) => [...prev, responseMessage]);
-    }, 2000);
+        unlisten = fn;
+      } catch (error) {
+        console.error("Failed to set up listener:", error);
+      }
+    };
+
+    setupListener();
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [rideManagerId]);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (unreadCount > 0) {
+      setMessages((prev) =>
+        prev.map((m) => ({
+          ...m,
+          status: "read",
+        }))
+      );
+      setUnreadCount(0);
+    }
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!messageInput.trim()) return;
+
+    setMessageInput("");
+
+    await invoke("send_maintenance_chat_message", {
+      rideManagerId: rideManagerId,
+      senderId: rideManagerId,
+      content: messageInput,
+    });
   };
 
-  const getAutomaticResponse = (message: string): string => {
-    const lowerMessage = message.toLowerCase();
-
-    if (
-      lowerMessage.includes("schedule") ||
-      lowerMessage.includes("maintenance")
-    ) {
-      return "Our maintenance team works 24/7. For specific ride maintenance schedules, please check the maintenance calendar in your dashboard or submit a formal inquiry through the maintenance request tab.";
-    } else if (
-      lowerMessage.includes("emergency") ||
-      lowerMessage.includes("urgent")
-    ) {
-      return "For emergencies, please call our emergency hotline at 555-MAINT immediately. Safety is our top priority.";
-    } else if (
-      lowerMessage.includes("part") ||
-      lowerMessage.includes("replacement")
-    ) {
-      return "For parts replacement, please submit a detailed maintenance request with the specific part information. Our team will assess and respond within 24 hours.";
-    } else {
-      return "Thank you for your message. Our maintenance team will review your inquiry and get back to you shortly. For urgent matters, please use the emergency hotline.";
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
@@ -142,111 +134,94 @@ export function MaintenanceChat({ staffId, staffName }: MaintenanceChatProps) {
             Maintenance Chat
           </h2>
           <p className="text-muted-foreground">
-            Chat with the Care & Maintenance Division for assistance
+            Chat with Care & Maintenance Division for Operational Assistance
           </p>
         </div>
       </div>
-
-      <Card className="h-[600px] flex flex-col">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src="/placeholder.svg?height=40&width=40" />
-                <AvatarFallback>CM</AvatarFallback>
+      <Card className="flex flex-col h-[calc(100vh-300px)] min-h-[500px]">
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center gap-2">
+            <div className="relative">
+              <Avatar className="h-8 w-8">
+                <AvatarImage
+                  src="/placeholder.svg?height=32&width=32"
+                  alt="Maintenance Division"
+                />
+                <AvatarFallback>MD</AvatarFallback>
               </Avatar>
-              <div>
-                <CardTitle>Care & Maintenance Division</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  <Badge variant="success" className="mr-2">
-                    Online
-                  </Badge>
-                  Available 24/7 for maintenance support
+              <span
+                className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background ${
+                  staffStatus === "online"
+                    ? "bg-green-500"
+                    : staffStatus === "away"
+                    ? "bg-yellow-500"
+                    : "bg-gray-500"
+                }`}
+              />
+            </div>
+            <span>Maintenance Division</span>
+            <Badge
+              variant="outline"
+              className={
+                staffStatus === "online"
+                  ? "text-green-500"
+                  : staffStatus === "away"
+                  ? "text-yellow-500"
+                  : "text-gray-500"
+              }
+            >
+              {staffStatus}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.message_id}
+              className={`flex ${
+                message.sender_id === rideManagerId
+                  ? "justify-end"
+                  : "justify-start"
+              }`}
+            >
+              <div
+                className={`max-w-[80%] rounded-lg p-3 ${
+                  message.sender_id === rideManagerId
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                }`}
+              >
+                <p>{message.content}</p>
+                <p
+                  className={`text-xs mt-1 ${
+                    message.sender_id === rideManagerId
+                      ? "text-primary-foreground/70"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {formatTime(message.timestamp)}
                 </p>
               </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.senderId === staffId
-                      ? "justify-end"
-                      : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.senderId === staffId
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
-                  >
-                    {message.senderId !== staffId && (
-                      <div className="font-medium text-sm mb-1">
-                        {message.senderName}
-                      </div>
-                    )}
-                    <p>{message.content}</p>
-                    <div
-                      className={`text-xs mt-1 flex items-center justify-end gap-1 ${
-                        message.senderId === staffId
-                          ? "text-primary-foreground/70"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {formatTime(message.timestamp)}
-                      {message.senderId === staffId && (
-                        <CheckCircle className="h-3 w-3" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-lg p-3 bg-muted">
-                    <div className="flex items-center gap-1">
-                      <div className="h-2 w-2 rounded-full bg-foreground/70 animate-bounce"></div>
-                      <div
-                        className="h-2 w-2 rounded-full bg-foreground/70 animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                      <div
-                        className="h-2 w-2 rounded-full bg-foreground/70 animate-bounce"
-                        style={{ animationDelay: "0.4s" }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
-          <div className="p-4 border-t">
-            <div className="flex gap-2">
-              <Textarea
-                placeholder="Type your message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="min-h-[60px] resize-none"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-              />
-              <Button onClick={handleSendMessage} className="shrink-0">
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          ))}
+          <div ref={messagesEndRef} />
         </CardContent>
+
+        <div className="p-3 border-t mt-auto">
+          <div className="flex gap-2">
+            <Textarea
+              placeholder="Type your message..."
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              onKeyDown={handleKeyPress}
+              className="min-h-[60px] resize-none"
+            />
+            <Button onClick={handleSendMessage} disabled={!messageInput.trim()}>
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </Card>
     </div>
   );

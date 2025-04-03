@@ -10,6 +10,7 @@ import {
 } from "@/components/staff/schedule-management";
 import { MaintenanceChat } from "@/components/staff/ride-manager/maintenance-chat";
 import { OfficialChatInterface } from "@/components/staff/customer-service/official-chat-interface";
+import { OfficialMaintenanceChatInterface } from "@/components/staff/maintenance/official-maintenance-chat-interface";
 
 // Dummy data for maintenance tasks
 const maintenanceTasks: MaintenanceTask[] = [
@@ -133,7 +134,11 @@ const maintenanceStaff: Staff[] = [
   },
 ];
 
-export default function MaintenanceManager() {
+interface MaintenanceManagerProps {
+  staffId: string;
+}
+
+export default function MaintenanceManager({ staffId } : MaintenanceManagerProps) {
   const [tasks, setTasks] = useState<MaintenanceTask[]>(maintenanceTasks);
   const [staff, setStaff] = useState<Staff[]>(maintenanceStaff);
   const [activeTab, setActiveTab] = useState("schedule");
@@ -200,7 +205,7 @@ export default function MaintenanceManager() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="schedule">Schedule Management</TabsTrigger>
             <TabsTrigger value="reports">Maintenance Reports</TabsTrigger>
-            <TabsTrigger value="chat">Chat with Ride Manager</TabsTrigger>
+            <TabsTrigger value="chat">Ride Manager Chat</TabsTrigger>
           </TabsList>
           <TabsContent value="schedule" className="mt-6">
             <ScheduleManagement
@@ -219,7 +224,7 @@ export default function MaintenanceManager() {
             </p>
           </TabsContent>
           <TabsContent value="chat" className="mt-6">
-            <OfficialChatInterface userId="" />
+            <OfficialMaintenanceChatInterface staffId={staffId} />
           </TabsContent>
         </Tabs>
       </div>

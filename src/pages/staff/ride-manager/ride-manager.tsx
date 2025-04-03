@@ -36,12 +36,10 @@ const initialProposals = [
 
 interface RideManagerProps {
   staffId: string;
-  staffName?: string;
 }
 
 export default function RideManager({
-  staffId,
-  staffName = "Ride Manager",
+  staffId
 }: RideManagerProps) {
   const [rides, setRides] = useState<RideDetails[]>([]);
   const [staff, setStaff] = useState<RideStaff[]>([]);
@@ -336,7 +334,7 @@ export default function RideManager({
           </TabsContent>
 
           <TabsContent value="chat" className="mt-6">
-            <MaintenanceChat staffId={staffId} staffName={staffName} />
+            <MaintenanceChat rideManagerId={staffId} />
           </TabsContent>
         </Tabs>
       </div>

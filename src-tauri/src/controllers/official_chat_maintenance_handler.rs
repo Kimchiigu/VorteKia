@@ -31,7 +31,7 @@ pub struct CustomerInfo {
 pub async fn listen_to_maintenance_chat(
     app: AppHandle,
     state: State<'_, AppState>,
-    customer_id: String,
+    ride_manager_id: String,
 ) -> Result<(), String> {
     let firestore = {
         let fs_lock = state.firestore.lock().await;
@@ -45,7 +45,7 @@ pub async fn listen_to_maintenance_chat(
     }
 
     let parent_path = firestore
-        .parent_path("official_chat_maintenance_division", &customer_id)
+        .parent_path("official_chat_maintenance_division", &ride_manager_id)
         .map_err(|e| format!("❌ Error creating parent path: {:?}", e))?;
 
     let firestore_clone = firestore.clone();
@@ -74,7 +74,7 @@ pub async fn listen_to_maintenance_chat(
             return;
         }
 
-        println!("📡 Listening to maintenance chat of customer: {}", customer_id);
+        println!("📡 Listening to maintenance chat of ride manager: {}", ride_manager_id);
 
         if let Err(e) = listener
             .start(move |event| {
@@ -121,7 +121,7 @@ pub async fn listen_to_maintenance_chat(
 #[tauri::command]
 pub async fn send_maintenance_chat_message(
     state: State<'_, AppState>,
-    customer_id: String,
+    ride_manager_id: String,
     sender_id: String,
     content: String,
 ) -> Result<(), String> {
@@ -137,8 +137,8 @@ pub async fn send_maintenance_chat_message(
         .fluent()
         .insert()
         .into("official_chat_maintenance_division")
-        .document_id(&customer_id)
-        .object(&json!({ "id": customer_id }))
+        .document_id(&ride_manager_id)
+        .object(&json!({ "id": ride_manager_id }))
         .execute::<()>()
         .await;
 
@@ -152,7 +152,7 @@ pub async fn send_maintenance_chat_message(
     });
 
     let parent_path = firestore
-        .parent_path("official_chat_maintenance_division", &customer_id)
+        .parent_path("official_chat_maintenance_division", &ride_manager_id)
         .map_err(|e| format!("Error creating parent path: {:?}", e))?;
 
     firestore
@@ -166,12 +166,12 @@ pub async fn send_maintenance_chat_message(
         .await
         .map_err(|e| format!("Failed to send message: {:?}", e))?;
 
-    println!("✉️ Sent maintenance message for customer {}: {:?}", customer_id, message);
+    println!("✉️ Sent maintenance message for ride manager {}: {:?}", ride_manager_id, message);
     Ok(())
 }
 
 #[tauri::command]
-pub async fn fetch_maintenance_chat_customers(
+pub async fn fetch_maintenance_chat_ride_managers(
     state: State<'_, AppState>,
 ) -> Result<Vec<CustomerInfo>, String> {
     let firestore = {
@@ -205,7 +205,7 @@ pub async fn fetch_maintenance_chat_customers(
 #[tauri::command]
 pub async fn fetch_maintenance_chat_messages(
     state: State<'_, AppState>,
-    customer_id: String,
+    ride_manager_id: String,
 ) -> Result<Vec<OfficialChatMessage>, String> {
     let firestore = {
         let fs_lock = state.firestore.lock().await;
@@ -213,7 +213,7 @@ pub async fn fetch_maintenance_chat_messages(
     };
 
     let parent_path = firestore
-        .parent_path("official_chat_maintenance_division", &customer_id)
+        .parent_path("official_chat_maintenance_division", &ride_manager_id)
         .map_err(|e| format!("Error creating parent path: {:?}", e))?;
 
     let messages: Vec<OfficialChatMessage> = firestore

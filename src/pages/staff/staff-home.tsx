@@ -39,7 +39,7 @@ export default function StaffHome() {
               {user.role === "F&B Supervisor" && <FNBSupervisor />}
               {user.role === "Chef" && <Chef />}
               {user.role === "Waiter" && <Waiter />}
-              {user.role === "Maintenance Manager" && <MaintenanceManager />}
+              {user.role === "Maintenance Manager" && <MaintenanceManager staffId={user.user_id} />}
               {user.role === "Maintenance Staff" && <MaintenanceStaff />}
               {user.role === "Retail Manager" && <RetailManager />}
               {user.role === "Sales Associate" && <SalesAssociate />}

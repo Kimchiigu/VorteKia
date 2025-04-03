@@ -23,7 +23,7 @@ use controllers::order_handler::{view_all_orders, view_orders, create_order, upd
 use controllers::lost_and_found_handler::{view_lost_and_found_items, create_lost_item, update_lost_item, delete_lost_item};
 use controllers::chat_handler::{send_group_message, fetch_group_info, get_all_groups, listen_to_group_chat, fetch_group_chat_messages};
 use controllers::official_chat_handler::{fetch_official_chat_customers, fetch_official_chat_messages, send_official_chat_message, listen_to_official_chat};
-use controllers::official_chat_maintenance_handler::{fetch_maintenance_chat_customers, listen_to_maintenance_chat, fetch_maintenance_chat_messages, send_maintenance_chat_message};
+use controllers::official_chat_maintenance_handler::{fetch_maintenance_chat_ride_managers, listen_to_maintenance_chat, fetch_maintenance_chat_messages, send_maintenance_chat_message};
 use controllers::broadcast_handler::send_broadcast_message;
 use controllers::ride_manager_handler::{assign_ride_staff, create_maintenance_request};
 use controllers::proposal_handler::{create_proposal, view_all_proposal};
@@ -248,7 +248,7 @@ pub async fn run() {
             view_all_proposal,
             create_maintenance_request,
             view_all_maintenance,
-            fetch_maintenance_chat_customers,
+            fetch_maintenance_chat_ride_managers,
             listen_to_maintenance_chat,
             fetch_maintenance_chat_messages,
             send_maintenance_chat_message,
