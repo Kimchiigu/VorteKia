@@ -10,6 +10,7 @@ pub struct Model {
     pub queue_id: String,
     pub ride_id: String,
     pub customer_id: String,
+    pub position: i32,
     pub joined_at: String,
 }
 

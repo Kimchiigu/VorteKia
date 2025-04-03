@@ -1,5 +1,3 @@
-import type React from "react";
-
 import { useState } from "react";
 import {
   Card,
@@ -28,7 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Plus, Edit, Trash2, Users } from "lucide-react";
+import { Search, Plus, Trash2 } from "lucide-react";
 
 export interface Customer {
   id: string;
@@ -38,6 +36,8 @@ export interface Customer {
   fastPass: boolean;
   specialNeeds?: string;
   addedTime: Date;
+  position: number;
+  queue_id: string;
 }
 
 export interface RideQueue {
@@ -51,35 +51,21 @@ export interface RideQueue {
 
 interface QueueManagementProps {
   queue: RideQueue;
-  onAddCustomer: (customer: Omit<Customer, "id" | "addedTime">) => void;
-  onEditCustomer: (
-    customerId: string,
-    customer: Omit<Customer, "id" | "addedTime">
-  ) => void;
+  onAddCustomer: (customerId: string) => void;
+  onMoveCustomer: (customerId: string, direction: "up" | "down") => void;
   onRemoveCustomer: (customerId: string) => void;
 }
 
 export function QueueManagement({
   queue,
   onAddCustomer,
-  onEditCustomer,
+  onMoveCustomer,
   onRemoveCustomer,
 }: QueueManagementProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
-
-  // Form state for new/edit customer
-  const [formData, setFormData] = useState<Omit<Customer, "id" | "addedTime">>({
-    name: "",
-    groupSize: 1,
-    ticketType: "Standard",
-    fastPass: false,
-    specialNeeds: "",
-  });
+  const [customerIdInput, setCustomerIdInput] = useState("");
+  const [customerToDelete, setCustomerToDelete] = useState<string | null>(null);
 
   const filteredCustomers = queue.customers.filter(
     (customer) =>
@@ -87,66 +73,19 @@ export function QueueManagement({
       customer.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-
-    if (type === "checkbox") {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: (e.target as HTMLInputElement).checked,
-      }));
-    } else if (name === "groupSize") {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: Number.parseInt(value) || 1,
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-  };
-
   const handleAddCustomer = () => {
-    onAddCustomer(formData);
-    resetForm();
-    setIsAddDialogOpen(false);
-  };
-
-  const handleEditCustomer = () => {
-    if (selectedCustomer) {
-      onEditCustomer(selectedCustomer.id, formData);
-      resetForm();
-      setIsEditDialogOpen(false);
+    if (customerIdInput) {
+      onAddCustomer(customerIdInput);
+      setCustomerIdInput("");
+      setIsAddDialogOpen(false);
     }
   };
 
-  const openEditDialog = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setFormData({
-      name: customer.name,
-      groupSize: customer.groupSize,
-      ticketType: customer.ticketType,
-      fastPass: customer.fastPass,
-      specialNeeds: customer.specialNeeds || "",
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      groupSize: 1,
-      ticketType: "Standard",
-      fastPass: false,
-      specialNeeds: "",
-    });
-    setSelectedCustomer(null);
+  const handleDeleteConfirm = () => {
+    if (customerToDelete) {
+      onRemoveCustomer(customerToDelete);
+      setCustomerToDelete(null);
+    }
   };
 
   const formatTime = (date: Date) => {
@@ -275,68 +214,62 @@ export function QueueManagement({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Position</TableHead>
                     <TableHead>Customer ID</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead>Group Size</TableHead>
-                    <TableHead>Ticket Type</TableHead>
-                    <TableHead>Fast Pass</TableHead>
                     <TableHead>Added Time</TableHead>
-                    <TableHead>Special Needs</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredCustomers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center">
+                      <TableCell colSpan={4} className="h-24 text-center">
                         No customers in queue.
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredCustomers.map((customer) => (
                       <TableRow key={customer.id}>
+                        <TableCell>{customer.position}</TableCell>
                         <TableCell className="font-medium">
                           {customer.id}
                         </TableCell>
                         <TableCell>{customer.name}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3 text-muted-foreground" />
-                            {customer.groupSize}
-                          </div>
-                        </TableCell>
-                        <TableCell>{customer.ticketType}</TableCell>
-                        <TableCell>
-                          {customer.fastPass ? (
-                            <Badge variant="success">Yes</Badge>
-                          ) : (
-                            <Badge variant="secondary">No</Badge>
-                          )}
-                        </TableCell>
                         <TableCell>{formatTime(customer.addedTime)}</TableCell>
-                        <TableCell>
-                          {customer.specialNeeds ? (
-                            <Badge variant="outline">
-                              {customer.specialNeeds}
-                            </Badge>
-                          ) : (
-                            "-"
-                          )}
-                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => openEditDialog(customer)}
+                              onClick={() => onMoveCustomer(customer.id, "up")}
+                              disabled={
+                                queue.customers.findIndex(
+                                  (c) => c.id === customer.id
+                                ) === 0
+                              }
                             >
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
+                              ↑
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => onRemoveCustomer(customer.id)}
+                              onClick={() =>
+                                onMoveCustomer(customer.id, "down")
+                              }
+                              disabled={
+                                queue.customers.findIndex(
+                                  (c) => c.id === customer.id
+                                ) ===
+                                queue.customers.length - 1
+                              }
+                            >
+                              ↓
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setCustomerToDelete(customer.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                               <span className="sr-only">Remove</span>
@@ -359,187 +292,49 @@ export function QueueManagement({
           <DialogHeader>
             <DialogTitle>Add Customer to Queue</DialogTitle>
             <DialogDescription>
-              Add a new customer or group to the ride queue
+              Masukkan Customer ID untuk menambahkan ke queue
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Customer Name</Label>
+              <Label htmlFor="customerId">Customer ID</Label>
               <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
+                id="customerId"
+                value={customerIdInput}
+                onChange={(e) => setCustomerIdInput(e.target.value)}
                 required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="groupSize">Group Size</Label>
-                <Input
-                  id="groupSize"
-                  name="groupSize"
-                  type="number"
-                  min="1"
-                  value={formData.groupSize}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="ticketType">Ticket Type</Label>
-                <select
-                  id="ticketType"
-                  name="ticketType"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={formData.ticketType}
-                  onChange={handleInputChange}
-                >
-                  <option value="Standard">Standard</option>
-                  <option value="Premium">Premium</option>
-                  <option value="VIP">VIP</option>
-                  <option value="Group">Group</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="fastPass"
-                name="fastPass"
-                checked={formData.fastPass}
-                onChange={handleInputChange}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <Label htmlFor="fastPass">Fast Pass</Label>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="specialNeeds">Special Needs (Optional)</Label>
-              <Input
-                id="specialNeeds"
-                name="specialNeeds"
-                value={formData.specialNeeds}
-                onChange={handleInputChange}
-                placeholder="e.g., Wheelchair access, interpreter needed"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                resetForm();
-                setIsAddDialogOpen(false);
-              }}
-            >
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={handleAddCustomer}
-              disabled={!formData.name || formData.groupSize < 1}
-            >
+            <Button onClick={handleAddCustomer} disabled={!customerIdInput}>
               Add to Queue
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Customer Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!customerToDelete}
+        onOpenChange={() => setCustomerToDelete(null)}
+      >
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Customer Information</DialogTitle>
+            <DialogTitle>Delete Confirmation</DialogTitle>
             <DialogDescription>
-              Update customer details in the queue
+              Are you sure you want to remove this customer from the queue?
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Customer Name</Label>
-              <Input
-                id="edit-name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-groupSize">Group Size</Label>
-                <Input
-                  id="edit-groupSize"
-                  name="groupSize"
-                  type="number"
-                  min="1"
-                  value={formData.groupSize}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-ticketType">Ticket Type</Label>
-                <select
-                  id="edit-ticketType"
-                  name="ticketType"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={formData.ticketType}
-                  onChange={handleInputChange}
-                >
-                  <option value="Standard">Standard</option>
-                  <option value="Premium">Premium</option>
-                  <option value="VIP">VIP</option>
-                  <option value="Group">Group</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="edit-fastPass"
-                name="fastPass"
-                checked={formData.fastPass}
-                onChange={handleInputChange}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <Label htmlFor="edit-fastPass">Fast Pass</Label>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-specialNeeds">
-                Special Needs (Optional)
-              </Label>
-              <Input
-                id="edit-specialNeeds"
-                name="specialNeeds"
-                value={formData.specialNeeds}
-                onChange={handleInputChange}
-                placeholder="e.g., Wheelchair access, interpreter needed"
-              />
-            </div>
-          </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                resetForm();
-                setIsEditDialogOpen(false);
-              }}
-            >
+            <Button variant="outline" onClick={() => setCustomerToDelete(null)}>
               Cancel
             </Button>
-            <Button
-              onClick={handleEditCustomer}
-              disabled={!formData.name || formData.groupSize < 1}
-            >
-              Update Customer
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

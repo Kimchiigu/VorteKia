@@ -14,7 +14,7 @@ use tokio::task::JoinHandle;
 use controllers::restaurant_handler::{view_all_restaurants, create_restaurant, delete_restaurant, update_restaurant};
 use controllers::ride_handler::{view_all_rides, view_ride, create_ride, update_ride, delete_ride};
 use controllers::menu_handler::{view_all_menus, view_menu, create_menu, update_menu, delete_menu};
-use controllers::queue_handler::{view_all_queues, create_queue, delete_queue, get_queues_by_ride};
+use controllers::queue_handler::{view_all_queues, create_queue, edit_queue, delete_queue, get_queues_by_ride};
 use controllers::user_handler::{get_all_users, get_all_ride_staff, get_all_users_lite, get_user_lite_by_id, login_user, staff_login, get_balance, top_up_balance, get_notifications, create_customer};
 use controllers::notification_handler::{view_notification, mark_all_notifications_read, send_notification};
 use controllers::store_handler::{view_all_stores, create_store, update_store, delete_store};
@@ -204,6 +204,7 @@ pub async fn run() {
             delete_ride,
             view_all_queues,
             create_queue,
+            edit_queue,
             delete_queue,
             get_queues_by_ride,
             get_all_users,

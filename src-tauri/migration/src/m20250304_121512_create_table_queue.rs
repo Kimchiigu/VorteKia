@@ -14,6 +14,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Queue::QueueID).string().not_null().primary_key())
                     .col(ColumnDef::new(Queue::RideID).string().not_null())
                     .col(ColumnDef::new(Queue::CustomerID).string().not_null())
+                    .col(ColumnDef::new(Queue::Position).integer().not_null())
                     .col(ColumnDef::new(Queue::JoinedAt).string().not_null())
                     .foreign_key(
                         ForeignKey::create()
@@ -36,22 +37,22 @@ impl MigrationTrait for Migration {
                 Query::insert()
                     .into_table(Queue::Table)
                     .columns([
-                        Queue::QueueID, Queue::RideID, Queue::CustomerID, Queue::JoinedAt,
+                        Queue::QueueID, Queue::RideID, Queue::CustomerID, Queue::Position, Queue::JoinedAt,
                     ])
                     .values_panic([
-                        "QU001".into(), "RI001".into(), "CUS-001".into(), "2025-03-06T10:00:00Z".into(),
+                        "QU001".into(), "RI001".into(), "CUS-001".into(), 1.into(), "2025-03-06T10:00:00Z".into(),
                     ])
                     .values_panic([
-                        "QU002".into(), "RI001".into(), "CUS-002".into(), "2025-03-06T10:05:00Z".into(),
+                        "QU002".into(), "RI001".into(), "CUS-002".into(), 2.into(), "2025-03-06T10:05:00Z".into(),
                     ])
                     .values_panic([
-                        "QU003".into(), "RI001".into(), "CUS-003".into(), "2025-03-06T10:10:00Z".into(),
+                        "QU003".into(), "RI001".into(), "CUS-003".into(), 3.into(), "2025-03-06T10:10:00Z".into(),
                     ])
                     .values_panic([
-                        "QU004".into(), "RI003".into(), "CUS-004".into(), "2025-03-06T10:15:00Z".into(),
+                        "QU004".into(), "RI003".into(), "CUS-004".into(), 1.into(), "2025-03-06T10:15:00Z".into(),
                     ])
                     .values_panic([
-                        "QU005".into(), "RI004".into(), "CUS-005".into(), "2025-03-06T10:20:00Z".into(),
+                        "QU005".into(), "RI004".into(), "CUS-005".into(), 1.into(), "2025-03-06T10:20:00Z".into(),
                     ])
                     .to_owned(),
             )
@@ -76,6 +77,7 @@ enum Queue {
     QueueID,
     RideID,
     CustomerID,
+    Position,
     JoinedAt,
 }
 
