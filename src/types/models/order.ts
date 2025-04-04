@@ -3,6 +3,7 @@ interface Order {
   customer_id: string;
   item_type: string;
   item_id: string;
+  date: string;
   quantity: number;
   is_paid: boolean;
 }

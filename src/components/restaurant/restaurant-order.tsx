@@ -107,10 +107,10 @@ export function RestaurantOrder({
                 return (
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">
-                      {order.orderNumber}
+                      {order.order_id}
                     </TableCell>
-                    <TableCell>{order.foodName}</TableCell>
-                    <TableCell>{order.customerId}</TableCell>
+                    <TableCell>{order.menu_id}</TableCell>
+                    <TableCell>{order.customer_id}</TableCell>
                     <TableCell>
                       <Badge
                         variant={

@@ -28,7 +28,7 @@ export function RestaurantDetail({ restaurant }: RestaurantDetailProps) {
       <div className="relative h-48 w-full">
         \
         <img
-          src={restaurant.image || "/placeholder.svg"}
+          src={restaurant.image ? `data:image/png;base64,${restaurant.image}` : "/placeholder.svg"}
           alt={restaurant.name}
           className="object-cover"
         />

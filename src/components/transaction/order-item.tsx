@@ -59,23 +59,9 @@ export default function OrderItem({
                           ${item.price.toFixed(2)}
                         </div>
                         <div className="flex items-center">
-                          {/* <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button> */}
                           <span className="w-10 text-center">
                             {order.quantity}
                           </span>
-                          {/* <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button> */}
                         </div>
                       </div>
                     </div>

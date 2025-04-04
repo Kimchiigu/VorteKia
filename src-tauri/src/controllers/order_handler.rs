@@ -12,6 +12,7 @@ pub struct OrderResponse {
     pub item_type: String,
     pub item_id: String,
     pub quantity: i32,
+    pub date: String,
     pub is_paid: bool,
 }
 
@@ -38,6 +39,7 @@ pub async fn view_all_orders(
                     customer_id: o.customer_id.clone(),
                     item_type: o.item_type.clone(),
                     item_id: o.item_id.clone(),
+                    date: o.date.clone(),
                     quantity: o.quantity,
                     is_paid: o.is_paid,
                 })
@@ -76,6 +78,7 @@ pub async fn view_orders(
                     customer_id: o.customer_id.clone(),
                     item_type: o.item_type.clone(),
                     item_id: o.item_id.clone(),
+                    date: o.date.clone(),
                     quantity: o.quantity,
                     is_paid: o.is_paid,
                 })
@@ -94,6 +97,7 @@ pub struct CreateOrderRequest {
     pub customer_id: String,
     pub item_type: String,
     pub item_id: String,
+    pub date: String,
     pub quantity: i32,
     pub is_paid: bool,
 }
@@ -108,6 +112,7 @@ pub async fn create_order(
         customer_id: Set(payload.customer_id),
         item_type: Set(payload.item_type),
         item_id: Set(payload.item_id),
+        date: Set(payload.date),
         quantity: Set(payload.quantity),
         is_paid: Set(payload.is_paid),
         ..Default::default()
@@ -141,6 +146,38 @@ pub async fn update_order(
             if let Some(quantity) = payload.quantity {
                 active_order.quantity = Set(quantity);
             }
+
+            if let Some(is_paid) = payload.is_paid {
+                active_order.is_paid = Set(is_paid);
+            }
+
+            match active_order.update(&state.db).await {
+                Ok(updated_order) => {
+                    cache_delete(&state.redis_pool, "get_all_orders_cache").await;
+                    Ok(ApiResponse::success(updated_order))
+                }
+                Err(err) => Ok(ApiResponse::error(format!("Failed to update order: {}", err))),
+            }
+        }
+        Ok(None) => Ok(ApiResponse::error(format!("No order found with ID: {}", payload.order_id))),
+        Err(err) => Ok(ApiResponse::error(format!("Database error while updating order: {}", err))),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct CheckoutOrderRequest {
+    pub order_id: String,
+    pub is_paid: Option<bool>,
+}
+
+#[tauri::command]
+pub async fn checkout_order(
+    state: State<'_, AppState>,
+    payload: CheckoutOrderRequest,
+) -> Result<ApiResponse<order::Model>, String> {
+    match Order::find_by_id(payload.order_id.clone()).one(&state.db).await {
+        Ok(Some(existing_order)) => {
+            let mut active_order: OrderActiveModel = existing_order.into();
 
             if let Some(is_paid) = payload.is_paid {
                 active_order.is_paid = Set(is_paid);

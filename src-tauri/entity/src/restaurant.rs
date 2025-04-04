@@ -14,6 +14,8 @@ pub struct Model {
     pub image: Vec<u8>,
     pub location: String,
     pub cuisine_type: String,
+    pub required_waiter: i32,
+    pub required_chef: i32,
     pub operational_status: String,
     pub operational_start_hours: String,
     pub operational_end_hours: String,

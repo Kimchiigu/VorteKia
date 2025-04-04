@@ -135,6 +135,7 @@ export default function OrderSection({ pageType }: OrderSectionProps) {
           balance={user.user?.balance || 0}
           checkoutDialogOpen={checkoutDialogOpen}
           setCheckoutDialogOpen={setCheckoutDialogOpen}
+          orders={orders}
         />
       </div>
     </div>

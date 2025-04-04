@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -13,8 +14,142 @@ import { RestaurantManagement } from "@/components/staff/fnb-supervisor/restaura
 import { FinancialOverview } from "@/components/staff/fnb-supervisor/financial-overview";
 import { Utensils, Users, Menu, Building2, BarChart3 } from "lucide-react";
 
-export default function FNBSupervisor() {
+// Definisikan tipe data berdasarkan response dari backend
+interface Restaurant {
+  restaurant_id: string;
+  name: string;
+  description: string;
+  cuisine_type: string;
+  image: string;
+  location: string;
+  required_waiter: number;
+  required_chef: number;
+  operational_status: string;
+  operational_start_hours: string;
+  operational_end_hours: string;
+}
+
+interface User {
+  user_id: string;
+  name: string;
+  email: string;
+  role: string;
+  balance: number;
+  restaurant_id?: string;
+}
+
+interface MenuItem {
+  menu_id: string;
+  restaurant_id: string;
+  name: string;
+  image: string;
+  description: string;
+  price: number;
+  available_quantity: number;
+}
+
+interface Order {
+  order_id: string;
+  customer_id: string;
+  item_type: string;
+  item_id: string;
+  quantity: number;
+  is_paid: boolean;
+}
+
+// Interface untuk ApiResponse dari backend
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+}
+
+interface FNBSupervisorProps {
+  staffId: string;
+}
+
+export default function FNBSupervisor({ staffId }: FNBSupervisorProps) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [menus, setMenus] = useState<MenuItem[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch data saat komponen dimuat
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [
+          restaurantsResponse,
+          usersResponse,
+          menusResponse,
+          ordersResponse,
+        ] = await Promise.all([
+          invoke<ApiResponse<Restaurant[]>>("view_all_restaurants"),
+          invoke<ApiResponse<User[]>>("get_all_users"),
+          invoke<ApiResponse<MenuItem[]>>("view_all_menus"),
+          invoke<ApiResponse<Order[]>>("view_all_orders"),
+        ]);
+
+        // Cek apakah response sukses dan ambil data
+        if (restaurantsResponse) setRestaurants(restaurantsResponse.data);
+        else
+          throw new Error(
+            restaurantsResponse.error || "Failed to fetch restaurants"
+          );
+
+        if (usersResponse) setUsers(usersResponse.data);
+        else throw new Error(usersResponse.error || "Failed to fetch users");
+
+        if (menusResponse) setMenus(menusResponse.data);
+        else throw new Error(menusResponse.error || "Failed to fetch menus");
+
+        if (ordersResponse) setOrders(ordersResponse.data);
+        else throw new Error(ordersResponse.error || "Failed to fetch orders");
+
+        setLoading(false);
+      } catch (err) {
+        setError(`Error: ${err}`);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Jika masih loading
+  if (loading) {
+    return <div className="container mx-auto py-6">Loading...</div>;
+  }
+
+  // Jika ada error
+  if (error) {
+    return <div className="container mx-auto py-6">{error}</div>;
+  }
+
+  // Hitung data untuk tab Overview
+  const totalRestaurants = restaurants.length;
+  const openRestaurants = restaurants.filter(
+    (r) => r.operational_status === "Open"
+  ).length;
+  const closedRestaurants = restaurants.filter(
+    (r) => r.operational_status === "Closed"
+  ).length;
+  const staff = users.filter((u) => u.role === "Chef" || u.role === "Waiter");
+  const chefs = staff.filter((u) => u.role === "Chef").length;
+  const waiters = staff.filter((u) => u.role === "Waiter").length;
+  const totalMenuItems = menus.length;
+
+  // Hitung revenue (quantity * price untuk item_type "restaurant" yang sudah dibayar)
+  const paidRestaurantOrders = orders.filter(
+    (o) => o.is_paid && o.item_type === "restaurant"
+  );
+  const revenue = paidRestaurantOrders.reduce((sum, order) => {
+    const menuItem = menus.find((m) => m.menu_id === order.item_id);
+    return menuItem ? sum + order.quantity * menuItem.price : sum;
+  }, 0);
 
   return (
     <div className="container mx-auto py-6">
@@ -78,9 +213,9 @@ export default function FNBSupervisor() {
                 <Building2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">3</div>
+                <div className="text-2xl font-bold">{totalRestaurants}</div>
                 <p className="text-xs text-muted-foreground">
-                  2 open, 1 closed
+                  {openRestaurants} open, {closedRestaurants} closed
                 </p>
               </CardContent>
             </Card>
@@ -92,9 +227,9 @@ export default function FNBSupervisor() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">14</div>
+                <div className="text-2xl font-bold">{staff.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  5 chefs, 9 waiters
+                  {chefs} chefs, {waiters} waiters
                 </p>
               </CardContent>
             </Card>
@@ -106,9 +241,9 @@ export default function FNBSupervisor() {
                 <Menu className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">5</div>
+                <div className="text-2xl font-bold">{totalMenuItems}</div>
                 <p className="text-xs text-muted-foreground">
-                  Across 3 restaurants
+                  Across {totalRestaurants} restaurants
                 </p>
               </CardContent>
             </Card>
@@ -120,9 +255,9 @@ export default function FNBSupervisor() {
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$9,246.50</div>
+                <div className="text-2xl font-bold">${revenue.toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground">
-                  +4.3% from yesterday
+                  {/* Jika ada data sebelumnya, bisa hitung persentase di sini */}
                 </p>
               </CardContent>
             </Card>
@@ -138,48 +273,33 @@ export default function FNBSupervisor() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        Parkside Grill
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        American • Main Street
-                      </p>
+                  {restaurants.map((restaurant) => (
+                    <div
+                      key={restaurant.restaurant_id}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {restaurant.name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {restaurant.cuisine_type} • {restaurant.location}
+                        </p>
+                      </div>
+                      <div className="flex items-center">
+                        <div
+                          className={`h-2 w-2 rounded-full mr-2 ${
+                            restaurant.operational_status === "Open"
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                          }`}
+                        ></div>
+                        <span className="text-sm">
+                          {restaurant.operational_status}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
-                      <span className="text-sm">Open</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        Thrill Bites
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Fast Food • Thrill Zone
-                      </p>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
-                      <span className="text-sm">Open</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        Adventure Café
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Café • Adventure Avenue
-                      </p>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="h-2 w-2 rounded-full bg-red-500 mr-2"></div>
-                      <span className="text-sm">Closed</span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -191,33 +311,38 @@ export default function FNBSupervisor() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm">Parkside Grill</span>
-                      <span className="text-sm text-muted-foreground">5/5</span>
-                    </div>
-                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-green-500 w-full"></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm">Thrill Bites</span>
-                      <span className="text-sm text-muted-foreground">3/3</span>
-                    </div>
-                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-green-500 w-full"></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm">Adventure Café</span>
-                      <span className="text-sm text-muted-foreground">2/6</span>
-                    </div>
-                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-red-500 w-1/3"></div>
-                    </div>
-                  </div>
+                  {restaurants.map((restaurant) => {
+                    const requiredStaff =
+                      restaurant.required_chef + restaurant.required_waiter;
+                    const currentStaff = staff.filter(
+                      (s) => s.restaurant_id === restaurant.restaurant_id
+                    ).length;
+                    const percentage =
+                      requiredStaff > 0
+                        ? (currentStaff / requiredStaff) * 100
+                        : 0;
+
+                    return (
+                      <div key={restaurant.restaurant_id}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm">{restaurant.name}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {currentStaff}/{requiredStaff}
+                          </span>
+                        </div>
+                        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${
+                              currentStaff >= requiredStaff
+                                ? "bg-green-500"
+                                : "bg-red-500"
+                            }`}
+                            style={{ width: `${Math.min(percentage, 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -225,19 +350,28 @@ export default function FNBSupervisor() {
         </TabsContent>
 
         <TabsContent value="staff">
-          <StaffManagement />
+          <StaffManagement restaurants={restaurants} users={users} />
         </TabsContent>
 
         <TabsContent value="menu">
-          <MenuManagement />
+          <MenuManagement menus={menus} restaurants={restaurants} />
         </TabsContent>
 
         <TabsContent value="restaurants">
-          <RestaurantManagement />
+          <RestaurantManagement
+            restaurants={restaurants}
+            staffId={staffId}
+            users={users}
+            menus={menus}
+          />
         </TabsContent>
 
         <TabsContent value="financial">
-          <FinancialOverview />
+          <FinancialOverview
+            orders={orders}
+            menus={menus}
+            restaurants={restaurants}
+          />
         </TabsContent>
       </Tabs>
     </div>

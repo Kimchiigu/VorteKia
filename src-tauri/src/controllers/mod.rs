@@ -15,3 +15,4 @@ pub mod proposal_handler;
 pub mod ride_manager_handler;
 pub mod maintenance_handler;
 pub mod official_chat_maintenance_handler;
+pub mod fnb_supervisor_handler;

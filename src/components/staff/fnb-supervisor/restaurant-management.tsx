@@ -1,6 +1,5 @@
-"use client";
-
-import { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -23,6 +22,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -39,131 +39,310 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Clock, Edit, Eye, Plus, Trash2 } from "lucide-react";
+import { Camera, Clock, Edit, Eye, Plus, Trash2, Upload } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
-interface Restaurant {
-  id: string;
-  name: string;
-  description: string;
-  image: string;
-  cuisineType: string;
-  openingTime: string;
-  closingTime: string;
-  isOpen: boolean;
-  location: string;
+interface RestaurantManagementProps {
+  restaurants: Restaurant[];
+  staffId: string;
+  users: User[];
+  menus: Menu[];
 }
 
-export function RestaurantManagement() {
-  // Mock data - in a real app, this would come from an API
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([
-    {
-      id: "rest1",
-      name: "Parkside Grill",
-      description: "American grill restaurant with a view of the park",
-      image: "/placeholder.svg?height=200&width=300",
-      cuisineType: "American",
-      openingTime: "10:00",
-      closingTime: "22:00",
-      isOpen: true,
-      location: "Main Street",
-    },
-    {
-      id: "rest2",
-      name: "Thrill Bites",
-      description: "Quick bites near the roller coasters",
-      image: "/placeholder.svg?height=200&width=300",
-      cuisineType: "Fast Food",
-      openingTime: "09:00",
-      closingTime: "21:00",
-      isOpen: true,
-      location: "Thrill Zone",
-    },
-    {
-      id: "rest3",
-      name: "Adventure Café",
-      description: "Relaxing café with a variety of pastries and coffee",
-      image: "/placeholder.svg?height=200&width=300",
-      cuisineType: "Café",
-      openingTime: "08:00",
-      closingTime: "20:00",
-      isOpen: false,
-      location: "Adventure Avenue",
-    },
-  ]);
+export type ProposalStatus = "Pending" | "Approved" | "Rejected";
 
+export interface RestaurantProposal {
+  id: string;
+  title: string;
+  type: "Ride" | "Restaurant" | "Store";
+  cost: number;
+  image: string;
+  description: string;
+  status: "Pending" | "Approved" | "Rejected";
+  date: string;
+  feedback?: string;
+}
+
+export function RestaurantManagement({
+  restaurants,
+  staffId,
+  users,
+  menus,
+}: RestaurantManagementProps) {
   const [newRestaurant, setNewRestaurant] = useState<
     Omit<Restaurant, "id" | "isOpen">
   >({
+    restaurant_id: "",
     name: "",
     description: "",
+    cuisine_type: "",
     image: "/placeholder.svg?height=200&width=300",
-    cuisineType: "",
-    openingTime: "09:00",
-    closingTime: "21:00",
     location: "",
+    required_waiter: 0,
+    required_chef: 0,
+    operational_status: "",
+    operational_start_hours: "09:00",
+    operational_end_hours: "21:00",
   });
 
+  const [restaurantList, setRestaurants] = useState<Restaurant[]>(restaurants);
   const [editRestaurant, setEditRestaurant] = useState<Restaurant | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [proposalSubmitted, setProposalSubmitted] = useState<boolean>(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [proposals, setProposals] = useState<RestaurantProposal[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [proposalCost, setProposalCost] = useState<string>("");
+
+  const fetchRestaurants = async () => {
+    try {
+      const response = await invoke("view_all_restaurants");
+      // @ts-ignore
+      if (response.data) {
+        // @ts-ignore
+        console.log("Restaurants:", response.data);
+        // @ts-ignore
+        setRestaurants(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching menu items:", error);
+    }
+  };
 
   const handleAddRestaurant = () => {
-    if (!newRestaurant.name || !newRestaurant.cuisineType) return;
+    if (!newRestaurant.name || !newRestaurant.cuisine_type) return;
 
-    const id = `rest${restaurants.length + 1}`;
-    setRestaurants([...restaurants, { ...newRestaurant, id, isOpen: false }]);
+    const id = `REST_${restaurants.length + 1}`;
+    setRestaurants([
+      ...restaurants,
+      { ...newRestaurant, restaurant_id: id, operational_status: "Closed" },
+    ]);
 
-    // Reset form
     setNewRestaurant({
+      restaurant_id: "",
       name: "",
       description: "",
+      cuisine_type: "",
       image: "/placeholder.svg?height=200&width=300",
-      cuisineType: "",
-      openingTime: "09:00",
-      closingTime: "21:00",
       location: "",
+      required_waiter: 0,
+      required_chef: 0,
+      operational_status: "",
+      operational_start_hours: "09:00",
+      operational_end_hours: "21:00",
     });
   };
 
-  const handleUpdateRestaurant = () => {
+  const handleUpdateRestaurant = async () => {
     if (!editRestaurant) return;
 
-    const updatedRestaurants = restaurants.map((restaurant) =>
-      restaurant.id === editRestaurant.id ? editRestaurant : restaurant
-    );
+    try {
+      const base64 = (editRestaurant.image ?? "").split(",")[1] || "";
+      const binary = atob(base64);
+      const byteArray = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        byteArray[i] = binary.charCodeAt(i);
+      }
 
-    setRestaurants(updatedRestaurants);
-    setEditRestaurant(null);
+      await invoke("update_restaurant", {
+        payload: {
+          restaurant_id: editRestaurant.restaurant_id,
+          name: editRestaurant.name,
+          description: editRestaurant.description,
+          cuisine_type: editRestaurant.cuisine_type,
+          image: Array.from(byteArray),
+          location: editRestaurant.location,
+          required_waiter: editRestaurant.required_waiter,
+          required_chef: editRestaurant.required_chef,
+          operational_status: editRestaurant.operational_status,
+          operational_start_hours: editRestaurant.operational_start_hours,
+          operational_end_hours: editRestaurant.operational_end_hours,
+        },
+      });
+
+      await fetchRestaurants();
+
+      setEditRestaurant(null);
+    } catch (error) {
+      console.error("Error updating menu item:", error);
+    }
   };
 
-  const handleDeleteRestaurant = (id: string) => {
-    setRestaurants(restaurants.filter((restaurant) => restaurant.id !== id));
+  const handleDeleteRestaurant = async (restaurantId: string) => {
+    try {
+      const staffToRemove = users.filter(
+        (user) => user.restaurant_id === restaurantId
+      );
+
+      const menuToRemove = menus.filter(
+        (menu) => menu.restaurant_id === restaurantId
+      );
+
+      for (const staff of staffToRemove) {
+        await invoke("assign_restaurant_staff", {
+          payload: {
+            staff_id: staff.user_id,
+            restaurant_id: null,
+          },
+        });
+        console.log(
+          `Staff ${staff.user_id} removed from restaurant ${restaurantId}`
+        );
+      }
+
+      for (const menu of menuToRemove) {
+        await invoke("delete_menu", {
+          payload: {
+            menu_id: menu.menu_id,
+          },
+        });
+      }
+
+      await invoke("delete_restaurant", {
+        payload: {
+          restaurant_id: restaurantId,
+        },
+      });
+
+      await fetchRestaurants();
+    } catch (error) {
+      console.error("Error deleting restaurant:", error);
+    }
+  };
+  
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const imageUrl = reader.result as string;
+        setImagePreview(imageUrl);
+        setEditRestaurant((prev) => {
+          if (prev === null) return null;
+          return { ...prev, image: imageUrl };
+        });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleSubmitProposal = () => {
-    // In a real app, this would send the proposal to the CFO and CEO
-    setProposalSubmitted(true);
-    setTimeout(() => setProposalSubmitted(false), 3000);
+  const handleSubmitProposal = async () => {
+    try {
+      const cost = parseFloat(proposalCost);
+      if (isNaN(cost)) {
+        console.error("Invalid cost");
+        return;
+      }
+      const proposal = {
+        title: newRestaurant.name,
+        type: "Restaurant" as const,
+        cost: cost,
+        image: newRestaurant.image || "",
+        description: `${newRestaurant.description}\nCuisine Type: ${newRestaurant.cuisine_type},\nOperational Hours: ${newRestaurant.operational_start_hours} - ${newRestaurant.operational_end_hours}`,
+      };
+
+      let byteArray = new Uint8Array(0);
+      if (proposal.image.startsWith("data:")) {
+        const base64 = proposal.image.split(",")[1] || "";
+        const binary = atob(base64);
+        byteArray = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          byteArray[i] = binary.charCodeAt(i);
+        }
+      }
+
+      const shortId = uuidv4().split("-")[0].toUpperCase();
+      const proposalId = `PRO-${shortId}`;
+
+      await invoke("create_proposal", {
+        payload: {
+          proposal_id: proposalId,
+          title: proposal.title,
+          type: proposal.type,
+          cost: proposal.cost,
+          image: Array.from(byteArray),
+          description: proposal.description,
+          sender_id: staffId,
+        },
+      });
+
+      const res: any = await invoke("view_all_proposal");
+      const formatted = res.data.map((p: any) => ({
+        id: p.proposal_id,
+        title: p.title,
+        type: p.type,
+        cost: p.cost,
+        image: `data:image/png;base64,${p.image}`,
+        description: p.description,
+        status: p.status,
+        date: p.date,
+        feedback: p.feedback || "",
+      }));
+      setProposals(formatted);
+      setProposalSubmitted(true);
+      setNewRestaurant({
+        restaurant_id: "",
+        name: "",
+        description: "",
+        cuisine_type: "",
+        image: "/placeholder.svg?height=200&width=300",
+        location: "",
+        required_waiter: 0,
+        required_chef: 0,
+        operational_status: "",
+        operational_start_hours: "09:00",
+        operational_end_hours: "21:00",
+      });
+      setProposalCost("");
+    } catch (err) {
+      console.error("Failed to submit proposal:", err);
+    }
   };
 
   const filteredRestaurants =
     filterStatus === "all"
-      ? restaurants
-      : restaurants.filter((restaurant) =>
-          filterStatus === "open" ? restaurant.isOpen : !restaurant.isOpen
+      ? restaurantList
+      : restaurantList.filter((restaurant) =>
+          filterStatus === "open"
+            ? restaurant.operational_status === "Open"
+            : restaurant.operational_status === "Closed"
         );
 
-  const cuisineTypes = [
-    "American",
-    "Italian",
-    "Chinese",
-    "Japanese",
-    "Mexican",
-    "Indian",
-    "Fast Food",
-    "Café",
-    "Dessert",
-  ];
+  const getStatusBadgeVariant = (status: ProposalStatus) => {
+    switch (status) {
+      case "Pending":
+        return "warning";
+      case "Approved":
+        return "success";
+      case "Rejected":
+        return "destructive";
+      default:
+        return "secondary";
+    }
+  };
+
+  const getTypeBadgeVariant = (type: string) => {
+    switch (type) {
+      case "Ride":
+        return "info";
+      case "Restaurant":
+        return "success";
+      case "Store":
+        return "warning";
+      default:
+        return "secondary";
+    }
+  };
+
+  const cuisine_types = ["Italian", "Western", "Mexican", "Asian", "Japanese"];
 
   return (
     <div className="space-y-6">
@@ -178,8 +357,10 @@ export function RestaurantManagement() {
           <Tabs defaultValue="view">
             <TabsList className="mb-4">
               <TabsTrigger value="view">View Restaurants</TabsTrigger>
-              <TabsTrigger value="add">Update Restaurant</TabsTrigger>
               <TabsTrigger value="propose">Propose New Restaurant</TabsTrigger>
+              <TabsTrigger value="view-proposal">
+                View Restaurant Proposals
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="view">
@@ -207,32 +388,44 @@ export function RestaurantManagement() {
 
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredRestaurants.map((restaurant) => (
-                  <Card key={restaurant.id} className="overflow-hidden">
+                  <Card
+                    key={restaurant.restaurant_id}
+                    className="overflow-hidden"
+                  >
                     <div className="relative h-48 w-full">
                       <img
-                        src={restaurant.image || "/placeholder.svg"}
+                        src={
+                          restaurant.image
+                            ? `data:image/png;base64,${restaurant.image}`
+                            : "/placeholder.svg"
+                        }
                         alt={restaurant.name}
                         className="object-cover"
                       />
                       <div className="absolute top-2 right-2">
                         <Badge
                           variant={
-                            restaurant.isOpen ? "success" : "destructive"
+                            restaurant.operational_status === "Open"
+                              ? "success"
+                              : "destructive"
                           }
                         >
-                          {restaurant.isOpen ? "Open" : "Closed"}
+                          {restaurant.operational_status === "Open"
+                            ? "Open"
+                            : "Closed"}
                         </Badge>
                       </div>
                     </div>
                     <CardContent className="p-4">
                       <h3 className="text-lg font-bold">{restaurant.name}</h3>
                       <p className="text-sm text-muted-foreground mb-2">
-                        {restaurant.cuisineType} • {restaurant.location}
+                        {restaurant.cuisine_type} • {restaurant.location}
                       </p>
                       <div className="flex items-center text-sm mb-4">
                         <Clock className="h-4 w-4 mr-1" />
                         <span>
-                          {restaurant.openingTime} - {restaurant.closingTime}
+                          {restaurant.operational_start_hours} -{" "}
+                          {restaurant.operational_end_hours}
                         </span>
                       </div>
                       <p className="text-sm line-clamp-2 mb-4">
@@ -250,13 +443,17 @@ export function RestaurantManagement() {
                             <DialogHeader>
                               <DialogTitle>{restaurant.name}</DialogTitle>
                               <DialogDescription>
-                                {restaurant.cuisineType} restaurant
+                                {restaurant.cuisine_type} restaurant
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4">
                               <div className="relative h-48 w-full rounded-md overflow-hidden">
                                 <img
-                                  src={restaurant.image || "/placeholder.svg"}
+                                  src={
+                                    restaurant.image
+                                      ? `data:image/png;base64,${restaurant.image}`
+                                      : "/placeholder.svg"
+                                  }
                                   alt={restaurant.name}
                                   className="object-cover"
                                 />
@@ -277,27 +474,29 @@ export function RestaurantManagement() {
                                 <div>
                                   <h4 className="font-medium">Cuisine Type</h4>
                                   <p className="text-sm text-muted-foreground">
-                                    {restaurant.cuisineType}
+                                    {restaurant.cuisine_type}
                                   </p>
                                 </div>
                               </div>
                               <div>
                                 <h4 className="font-medium">Operating Hours</h4>
                                 <p className="text-sm text-muted-foreground">
-                                  {restaurant.openingTime} -{" "}
-                                  {restaurant.closingTime}
+                                  {restaurant.operational_start_hours} -{" "}
+                                  {restaurant.operational_end_hours}
                                 </p>
                               </div>
                               <div>
                                 <h4 className="font-medium">Status</h4>
                                 <Badge
                                   variant={
-                                    restaurant.isOpen
+                                    restaurant.operational_status === "Open"
                                       ? "success"
                                       : "destructive"
                                   }
                                 >
-                                  {restaurant.isOpen ? "Open" : "Closed"}
+                                  {restaurant.operational_status === "Open"
+                                    ? "Open"
+                                    : "Closed"}
                                 </Badge>
                               </div>
                             </div>
@@ -305,13 +504,205 @@ export function RestaurantManagement() {
                         </Dialog>
 
                         <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setEditRestaurant(restaurant)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setEditRestaurant(restaurant)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Edit Restaurant</DialogTitle>
+                              </DialogHeader>
+                              {editRestaurant && (
+                                <div className="grid gap-4 py-4">
+                                  <div className="grid gap-2">
+                                    <Label htmlFor="edit-name">Name</Label>
+                                    <Input
+                                      id="edit-name"
+                                      value={editRestaurant.name}
+                                      onChange={(e) =>
+                                        setEditRestaurant({
+                                          ...editRestaurant,
+                                          name: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div className="grid gap-2">
+                                    <Label htmlFor="edit-description">
+                                      Description
+                                    </Label>
+                                    <Input
+                                      id="edit-description"
+                                      value={editRestaurant.description}
+                                      onChange={(e) =>
+                                        setEditRestaurant({
+                                          ...editRestaurant,
+                                          description: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div className="grid gap-2">
+                                    <Label htmlFor="edit-cuisine">
+                                      Cuisine Type
+                                    </Label>
+                                    <Input
+                                      id="edit-cuisine"
+                                      value={editRestaurant.cuisine_type}
+                                      onChange={(e) =>
+                                        setEditRestaurant({
+                                          ...editRestaurant,
+                                          cuisine_type: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div className="grid gap-2">
+                                    <Label htmlFor="edit-location">
+                                      Location
+                                    </Label>
+                                    <Input
+                                      id="edit-location"
+                                      value={editRestaurant.location}
+                                      onChange={(e) =>
+                                        setEditRestaurant({
+                                          ...editRestaurant,
+                                          location: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div className="grid gap-2">
+                                    <Label htmlFor="edit-location">
+                                      Restaurant Image
+                                    </Label>
+                                    <div className="relative h-32 w-32 rounded-md border border-input bg-muted flex items-center justify-center overflow-hidden">
+                                      {imagePreview ? (
+                                        <img
+                                          src={
+                                            imagePreview || "/placeholder.svg"
+                                          }
+                                          alt="Concept preview"
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : (
+                                        <Camera className="h-8 w-8 text-muted-foreground" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1">
+                                      <Input
+                                        id="image"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="hidden"
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                          document
+                                            .getElementById("image")
+                                            ?.click()
+                                        }
+                                        className="w-full"
+                                      >
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        Upload Image
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  {/* Field Tambahan */}
+                                  <div className="grid gap-2">
+                                    <Label htmlFor="edit-status">
+                                      Operational Status
+                                    </Label>
+                                    <Select
+                                      value={editRestaurant.operational_status}
+                                      onValueChange={(value) =>
+                                        setEditRestaurant({
+                                          ...editRestaurant,
+                                          operational_status: value,
+                                        })
+                                      }
+                                    >
+                                      <SelectTrigger id="edit-status">
+                                        <SelectValue placeholder="Select status" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Open">
+                                          Open
+                                        </SelectItem>
+                                        <SelectItem value="Closed">
+                                          Closed
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                      <Label htmlFor="edit-start-hours">
+                                        Start Hours
+                                      </Label>
+                                      <Input
+                                        id="edit-start-hours"
+                                        type="time"
+                                        value={
+                                          editRestaurant.operational_start_hours
+                                        }
+                                        onChange={(e) =>
+                                          setEditRestaurant({
+                                            ...editRestaurant,
+                                            operational_start_hours:
+                                              e.target.value,
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                    <div className="grid gap-2">
+                                      <Label htmlFor="edit-end-hours">
+                                        End Hours
+                                      </Label>
+                                      <Input
+                                        id="edit-end-hours"
+                                        type="time"
+                                        value={
+                                          editRestaurant.operational_end_hours
+                                        }
+                                        onChange={(e) =>
+                                          setEditRestaurant({
+                                            ...editRestaurant,
+                                            operational_end_hours:
+                                              e.target.value,
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              <DialogFooter>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setEditRestaurant(null)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  onClick={handleUpdateRestaurant}
+                                  disabled={isLoading}
+                                >
+                                  {isLoading ? "Saving..." : "Save Changes"}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
 
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -334,7 +725,9 @@ export function RestaurantManagement() {
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() =>
-                                    handleDeleteRestaurant(restaurant.id)
+                                    handleDeleteRestaurant(
+                                      restaurant.restaurant_id
+                                    )
                                   }
                                 >
                                   Delete
@@ -356,210 +749,6 @@ export function RestaurantManagement() {
                   </div>
                 )}
               </div>
-            </TabsContent>
-
-            <TabsContent value="add">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Update Restaurant Details</CardTitle>
-                  <CardDescription>
-                    Select a restaurant to update its details
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="select-restaurant">
-                        Select Restaurant
-                      </Label>
-                      <Select
-                        value={editRestaurant?.id || ""}
-                        onValueChange={(value) => {
-                          const restaurant = restaurants.find(
-                            (r) => r.id === value
-                          );
-                          if (restaurant) setEditRestaurant(restaurant);
-                        }}
-                      >
-                        <SelectTrigger id="select-restaurant">
-                          <SelectValue placeholder="Select a restaurant" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {restaurants.map((restaurant) => (
-                            <SelectItem
-                              key={restaurant.id}
-                              value={restaurant.id}
-                            >
-                              {restaurant.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {editRestaurant && (
-                      <div className="grid gap-4 mt-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="grid gap-2">
-                            <Label htmlFor="edit-name">Name</Label>
-                            <Input
-                              id="edit-name"
-                              value={editRestaurant.name}
-                              onChange={(e) =>
-                                setEditRestaurant({
-                                  ...editRestaurant,
-                                  name: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="edit-cuisine">Cuisine Type</Label>
-                            <Select
-                              value={editRestaurant.cuisineType}
-                              onValueChange={(value) =>
-                                setEditRestaurant({
-                                  ...editRestaurant,
-                                  cuisineType: value,
-                                })
-                              }
-                            >
-                              <SelectTrigger id="edit-cuisine">
-                                <SelectValue placeholder="Select cuisine type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {cuisineTypes.map((cuisine) => (
-                                  <SelectItem key={cuisine} value={cuisine}>
-                                    {cuisine}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <div className="grid gap-2">
-                          <Label htmlFor="edit-description">Description</Label>
-                          <Input
-                            id="edit-description"
-                            value={editRestaurant.description}
-                            onChange={(e) =>
-                              setEditRestaurant({
-                                ...editRestaurant,
-                                description: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-
-                        <div className="grid gap-2">
-                          <Label htmlFor="edit-location">Location</Label>
-                          <Input
-                            id="edit-location"
-                            value={editRestaurant.location}
-                            onChange={(e) =>
-                              setEditRestaurant({
-                                ...editRestaurant,
-                                location: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="grid gap-2">
-                            <Label htmlFor="edit-opening">Opening Time</Label>
-                            <Input
-                              id="edit-opening"
-                              type="time"
-                              value={editRestaurant.openingTime}
-                              onChange={(e) =>
-                                setEditRestaurant({
-                                  ...editRestaurant,
-                                  openingTime: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="edit-closing">Closing Time</Label>
-                            <Input
-                              id="edit-closing"
-                              type="time"
-                              value={editRestaurant.closingTime}
-                              onChange={(e) =>
-                                setEditRestaurant({
-                                  ...editRestaurant,
-                                  closingTime: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid gap-2">
-                          <Label>Status</Label>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant={
-                                editRestaurant.isOpen ? "default" : "outline"
-                              }
-                              onClick={() =>
-                                setEditRestaurant({
-                                  ...editRestaurant,
-                                  isOpen: true,
-                                })
-                              }
-                              className="flex-1"
-                            >
-                              Open
-                            </Button>
-                            <Button
-                              variant={
-                                !editRestaurant.isOpen ? "default" : "outline"
-                              }
-                              onClick={() =>
-                                setEditRestaurant({
-                                  ...editRestaurant,
-                                  isOpen: false,
-                                })
-                              }
-                              className="flex-1"
-                            >
-                              Closed
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="grid gap-2">
-                          <Label>Image Preview</Label>
-                          <div className="relative h-40 w-full rounded-md overflow-hidden border">
-                            <img
-                              src={editRestaurant.image || "/placeholder.svg"}
-                              alt="Restaurant preview"
-                              className="object-cover"
-                            />
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            In a real application, you would be able to upload
-                            an image here.
-                          </p>
-                        </div>
-
-                        <Button
-                          onClick={handleUpdateRestaurant}
-                          disabled={
-                            !editRestaurant.name || !editRestaurant.cuisineType
-                          }
-                          className="mt-2"
-                        >
-                          Save Changes
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="propose">
@@ -590,11 +779,11 @@ export function RestaurantManagement() {
                       <div className="grid gap-2">
                         <Label htmlFor="propose-cuisine">Cuisine Type</Label>
                         <Select
-                          value={newRestaurant.cuisineType}
+                          value={newRestaurant.cuisine_type}
                           onValueChange={(value) =>
                             setNewRestaurant({
                               ...newRestaurant,
-                              cuisineType: value,
+                              cuisine_type: value,
                             })
                           }
                         >
@@ -602,7 +791,7 @@ export function RestaurantManagement() {
                             <SelectValue placeholder="Select cuisine type" />
                           </SelectTrigger>
                           <SelectContent>
-                            {cuisineTypes.map((cuisine) => (
+                            {cuisine_types.map((cuisine) => (
                               <SelectItem key={cuisine} value={cuisine}>
                                 {cuisine}
                               </SelectItem>
@@ -650,11 +839,11 @@ export function RestaurantManagement() {
                         <Input
                           id="propose-opening"
                           type="time"
-                          value={newRestaurant.openingTime}
+                          value={newRestaurant.operational_start_hours}
                           onChange={(e) =>
                             setNewRestaurant({
                               ...newRestaurant,
-                              openingTime: e.target.value,
+                              operational_start_hours: e.target.value,
                             })
                           }
                         />
@@ -664,11 +853,11 @@ export function RestaurantManagement() {
                         <Input
                           id="propose-closing"
                           type="time"
-                          value={newRestaurant.closingTime}
+                          value={newRestaurant.operational_end_hours}
                           onChange={(e) =>
                             setNewRestaurant({
                               ...newRestaurant,
-                              closingTime: e.target.value,
+                              operational_end_hours: e.target.value,
                             })
                           }
                         />
@@ -691,20 +880,13 @@ export function RestaurantManagement() {
                     </div>
 
                     <div className="grid gap-2">
-                      <Label htmlFor="propose-budget">Estimated Budget</Label>
+                      <Label htmlFor="propose-budget">Cost</Label>
                       <Input
                         id="propose-budget"
                         type="number"
-                        placeholder="Enter estimated budget"
-                      />
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor="propose-roi">Expected ROI (months)</Label>
-                      <Input
-                        id="propose-roi"
-                        type="number"
-                        placeholder="Enter expected ROI in months"
+                        value={proposalCost}
+                        onChange={(e) => setProposalCost(e.target.value)}
+                        placeholder="Enter estimated cost"
                       />
                     </div>
 
@@ -712,8 +894,9 @@ export function RestaurantManagement() {
                       onClick={handleSubmitProposal}
                       disabled={
                         !newRestaurant.name ||
-                        !newRestaurant.cuisineType ||
-                        !newRestaurant.location
+                        !newRestaurant.cuisine_type ||
+                        !newRestaurant.location ||
+                        !proposalCost
                       }
                       className="mt-2"
                     >
@@ -727,6 +910,85 @@ export function RestaurantManagement() {
                         review your proposal.
                       </div>
                     )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="view-proposal">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Proposals</CardTitle>
+                  <CardDescription>List of submitted proposals</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Cost</TableHead>
+                          <TableHead>Submitted Date</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {proposals.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="h-24 text-center">
+                              No proposals found.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          proposals.map((proposal) => (
+                            <TableRow key={proposal.id}>
+                              <TableCell className="font-medium">
+                                {proposal.title}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    getTypeBadgeVariant(proposal.type) as
+                                      | "default"
+                                      | "secondary"
+                                      | "destructive"
+                                      | "outline"
+                                      | "success"
+                                      | "warning"
+                                      | "info"
+                                  }
+                                >
+                                  {proposal.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{proposal.description}</TableCell>
+                              <TableCell>
+                                ${proposal.cost.toLocaleString()}
+                              </TableCell>
+                              <TableCell>{proposal.date}</TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    getStatusBadgeVariant(proposal.status) as
+                                      | "default"
+                                      | "secondary"
+                                      | "destructive"
+                                      | "outline"
+                                      | "success"
+                                      | "warning"
+                                      | "info"
+                                  }
+                                >
+                                  {proposal.status}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
                   </div>
                 </CardContent>
               </Card>

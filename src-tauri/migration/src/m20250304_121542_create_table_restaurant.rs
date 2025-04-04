@@ -18,6 +18,8 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Restaurant::Image).binary().not_null())
                     .col(ColumnDef::new(Restaurant::Location).string().not_null())
                     .col(ColumnDef::new(Restaurant::CuisineType).string().not_null())
+                    .col(ColumnDef::new(Restaurant::RequiredWaiter).integer().not_null())
+                    .col(ColumnDef::new(Restaurant::RequiredChef).integer().not_null())
                     .col(ColumnDef::new(Restaurant::OperationalStatus).string().not_null())
                     .col(ColumnDef::new(Restaurant::OperationalStartHours).string().not_null())
                     .col(ColumnDef::new(Restaurant::OperationalEndHours).string().not_null())
@@ -38,32 +40,32 @@ impl MigrationTrait for Migration {
                     .into_table(Restaurant::Table)
                     .columns([
                         Restaurant::RestaurantID, Restaurant::Name, Restaurant::Image, Restaurant::Description, Restaurant::Location, Restaurant::CuisineType,
-                        Restaurant::OperationalStatus, Restaurant::OperationalStartHours, Restaurant::OperationalEndHours
+                        Restaurant::RequiredWaiter, Restaurant::RequiredChef, Restaurant::OperationalStatus, Restaurant::OperationalStartHours, Restaurant::OperationalEndHours
                     ])
                     .values_panic([ 
                         "RT001".into(), "The Gourmet Bistro".into(), restaurant1_img.into(),
-                        "A cozy bistro offering a variety of international cuisines.".into(), "Zone A".into(), "Western".into(), "Open".into(),
-                        "10:00:00".into(), "22:00:00".into()
+                        "A cozy bistro offering a variety of international cuisines.".into(), "Zone A".into(), "Western".into(), 
+                        3.into(), 2.into(), "Open".into(), "10:00:00".into(), "22:00:00".into()
                     ])
                     .values_panic([ 
                         "RT002".into(), "BreakBrunch!".into(), restaurant2_img.into(),
-                        "A family-friendly restaurant with Breakfast and Brunch specialties.".into(),  "Zone A".into(), "Western".into(), "Open".into(),
-                        "07:00:00".into(), "14:00:00".into()
+                        "A family-friendly restaurant with Breakfast and Brunch specialties.".into(),  "Zone A".into(), "Western".into(), 
+                        2.into(), 1.into(),  "Open".into(), "07:00:00".into(), "14:00:00".into()
                     ])
                     .values_panic([ 
                         "RT003".into(), "The Shakespeare".into(), restaurant3_img.into(),
-                        "Fresh seafood restaurant with stunning ocean views.".into(), "Zone B".into(), "Latin".into(), "Closed".into(),
-                        "09:00:00".into(), "17:00:00".into()
+                        "Fresh seafood restaurant with stunning ocean views.".into(), "Zone B".into(), "Latin".into(), 
+                        1.into(), 2.into(), "Closed".into(), "09:00:00".into(), "17:00:00".into()
                     ])
                     .values_panic([ 
                         "RT004".into(), "Bierra Taco".into(), restaurant4_img.into(),
-                        "Healthy Mexican meals made from fresh, local ingredients.".into(), "Zone C".into(), "Mexican".into(), "Open".into(),
-                        "11:00:00".into(), "20:00:00".into()
+                        "Healthy Mexican meals made from fresh, local ingredients.".into(), "Zone C".into(), "Mexican".into(), 
+                        1.into(), 1.into(), "Open".into(), "11:00:00".into(), "20:00:00".into()
                     ])
                     .values_panic([ 
                         "RT005".into(), "Pastechio".into(), restaurant5_img.into(),
-                        "A trendy café serving coffee, pastries, and of course pasta!".into(), "Zone D".into(), "Italian".into(), "Closed".into(),
-                        "08:00:00".into(), "18:00:00".into()
+                        "A trendy café serving coffee, pastries, and of course pasta!".into(), "Zone D".into(), "Italian".into(), 
+                        2.into(), 2.into(), "Closed".into(), "08:00:00".into(), "18:00:00".into()
                     ])
                     .to_owned(),
             )
@@ -90,6 +92,8 @@ enum Restaurant {
     Image,
     Location,
     CuisineType,
+    RequiredWaiter,
+    RequiredChef,
     OperationalStatus,
     OperationalStartHours,
     OperationalEndHours,

@@ -11,14 +11,21 @@ import { useNavigate } from "react-router";
 
 export function Navbar() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-4">
         <div className="flex items-center">
-          <button onClick={() => navigate("/")}>
+          <button
+            onClick={() => {
+              if (user) {
+                logout();
+              }
+              navigate("/");
+            }}
+          >
             <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-transparent bg-clip-text">
               VorteKia
             </span>

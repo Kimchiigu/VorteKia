@@ -12,6 +12,7 @@ pub struct Model {
     pub item_type: String,
     pub item_id: String,
     pub quantity: i32,
+    pub date: String,
     pub is_paid: bool,
 }
 

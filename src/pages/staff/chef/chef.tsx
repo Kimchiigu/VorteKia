@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RestaurantDetail } from "@/components/restaurant/restaurant-detail";
 import {
   RestaurantOrder,
@@ -6,76 +6,68 @@ import {
   type OrderStatus,
 } from "@/components/restaurant/restaurant-order";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { invoke } from "@tauri-apps/api/core";
+import { ApiResponse } from "@/types/props";
 
-// Dummy data for restaurant
-const restaurantData = {
-  id: "rest1",
-  name: "Gourmet Haven",
-  description:
-    "A fine dining restaurant specializing in international cuisine with a modern twist. Our chefs create culinary masterpieces using locally sourced ingredients.",
-  image: "/placeholder.svg?height=400&width=800",
-  chefs: [
-    { id: "chef1", name: "Gordon Smith", specialization: "Head Chef" },
-    { id: "chef2", name: "Maria Rodriguez", specialization: "Pastry Chef" },
-    { id: "chef3", name: "Hiroshi Tanaka", specialization: "Sushi Chef" },
-  ],
-  waiters: [
-    { id: "waiter1", name: "James Wilson" },
-    { id: "waiter2", name: "Sarah Johnson" },
-    { id: "waiter3", name: "Michael Brown" },
-    { id: "waiter4", name: "Emily Davis" },
-  ],
-};
-
-// Dummy data for orders
-const initialOrders: Order[] = [
-  {
-    id: "order1",
-    orderNumber: 1001,
-    foodName: "Filet Mignon",
-    customerId: "C1001",
-    status: "Not Done",
-  },
-  {
-    id: "order2",
-    orderNumber: 1002,
-    foodName: "Lobster Risotto",
-    customerId: "C1002",
-    status: "Not Done",
-  },
-  {
-    id: "order3",
-    orderNumber: 1003,
-    foodName: "Chocolate Soufflé",
-    customerId: "C1003",
-    status: "Waiting for Delivery",
-  },
-  {
-    id: "order4",
-    orderNumber: 1004,
-    foodName: "Caesar Salad",
-    customerId: "C1004",
-    status: "Not Done",
-  },
-  {
-    id: "order5",
-    orderNumber: 1005,
-    foodName: "Sushi Platter",
-    customerId: "C1005",
-    status: "Waiting for Delivery",
-  },
-  {
-    id: "order6",
-    orderNumber: 1006,
-    foodName: "Vegetable Curry",
-    customerId: "C1006",
-    status: "Delivered",
-  },
-];
+interface MenuItem {
+  menu_id: string;
+  restaurant_id: string;
+  name: string;
+  image: string;
+  description: string;
+  price: number;
+  available_quantity: number;
+}
 
 export default function Chef() {
-  const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [activeTab, setActiveTab] = useState("orders");
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [menus, setMenus] = useState<MenuItem[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [
+          restaurantsResponse,
+          usersResponse,
+          menusResponse,
+          ordersResponse,
+        ] = await Promise.all([
+          invoke<ApiResponse<Restaurant[]>>("view_all_restaurants"),
+          invoke<ApiResponse<User[]>>("get_all_users"),
+          invoke<ApiResponse<MenuItem[]>>("view_all_menus"),
+          invoke<ApiResponse<Order[]>>("view_all_orders"),
+        ]);
+
+        // Cek apakah response sukses dan ambil data
+        if (restaurantsResponse) setRestaurants(restaurantsResponse.data);
+        else
+          throw new Error(
+            restaurantsResponse.error || "Failed to fetch restaurants"
+          );
+
+        if (usersResponse) setUsers(usersResponse.data);
+        else throw new Error(usersResponse.error || "Failed to fetch users");
+
+        if (menusResponse) setMenus(menusResponse.data);
+        else throw new Error(menusResponse.error || "Failed to fetch menus");
+
+        if (ordersResponse) setOrders(ordersResponse.data);
+        else throw new Error(ordersResponse.error || "Failed to fetch orders");
+
+        setLoading(false);
+      } catch (err) {
+        setError(`Error: ${err}`);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleUpdateStatus = (orderId: string, newStatus: OrderStatus) => {
     setOrders((prevOrders) =>
@@ -103,7 +95,7 @@ export default function Chef() {
           </TabsContent>
           <TabsContent value="restaurant" className="mt-6">
             <h2 className="text-2xl font-bold mb-4">Restaurant Information</h2>
-            <RestaurantDetail restaurant={restaurantData} />
+            <RestaurantDetail restaurant={restaurants} />
           </TabsContent>
         </Tabs>
       </div>

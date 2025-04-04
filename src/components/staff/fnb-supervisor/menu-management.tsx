@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import {
   Card,
@@ -36,134 +34,180 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Camera, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 
-interface MenuItem {
-  id: string;
+interface Menu {
+  menu_id: string;
   name: string;
-  price: number;
   description: string;
-  image: string;
-  restaurantId: string;
-  category: string;
+  price: number;
+  available_quantity: number;
+  image?: string;
+  restaurant_id: string;
 }
 
 interface Restaurant {
-  id: string;
+  restaurant_id: string;
   name: string;
+  description: string;
+  cuisine_type: string;
+  image: string;
+  location: string;
+  operational_status: string;
+  operational_start_hours: string;
+  operational_end_hours: string;
 }
 
-export function MenuManagement() {
-  // Mock data - in a real app, this would come from an API
-  const [restaurants] = useState<Restaurant[]>([
-    { id: "rest1", name: "Parkside Grill" },
-    { id: "rest2", name: "Thrill Bites" },
-    { id: "rest3", name: "Adventure Café" },
-  ]);
+interface MenuManagementProps {
+  restaurants: Restaurant[];
+  menus: Menu[];
+}
 
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([
-    {
-      id: "item1",
-      name: "Thrill Burger",
-      price: 12.99,
-      description: "Juicy beef patty with lettuce, tomato, and special sauce",
-      image: "/placeholder.svg?height=100&width=100",
-      restaurantId: "rest1",
-      category: "Main Course",
-    },
-    {
-      id: "item2",
-      name: "Adventure Fries",
-      price: 5.99,
-      description: "Crispy fries with seasoning",
-      image: "/placeholder.svg?height=100&width=100",
-      restaurantId: "rest1",
-      category: "Side Dish",
-    },
-    {
-      id: "item3",
-      name: "Coaster Cola",
-      price: 3.99,
-      description: "Refreshing cola drink",
-      image: "/placeholder.svg?height=100&width=100",
-      restaurantId: "rest2",
-      category: "Beverage",
-    },
-    {
-      id: "item4",
-      name: "Roller Pizza",
-      price: 14.99,
-      description: "Cheese pizza with tomato sauce",
-      image: "/placeholder.svg?height=100&width=100",
-      restaurantId: "rest2",
-      category: "Main Course",
-    },
-    {
-      id: "item5",
-      name: "Park Salad",
-      price: 8.99,
-      description: "Fresh garden salad with vinaigrette",
-      image: "/placeholder.svg?height=100&width=100",
-      restaurantId: "rest3",
-      category: "Appetizer",
-    },
-  ]);
+export function MenuManagement({ menus, restaurants }: MenuManagementProps) {
+  const [menuItems, setMenuItems] = useState<Menu[]>(menus);
+  const [isLoading, setIsLoading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const [newItem, setNewItem] = useState<Omit<MenuItem, "id">>({
+  const [newItem, setNewItem] = useState<Omit<Menu, "menu_id">>({
     name: "",
     price: 0,
     description: "",
-    image: "/placeholder.svg?height=100&width=100",
-    restaurantId: "",
-    category: "",
+    image: "",
+    restaurant_id: "",
+    available_quantity: 0,
   });
 
-  const [editItem, setEditItem] = useState<MenuItem | null>(null);
-  const [selectedRestaurant, setSelectedRestaurant] = useState<string>("");
+  const [editItem, setEditItem] = useState<Menu | null>(null);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<string>("all");
 
-  const handleAddItem = () => {
-    if (!newItem.name || !newItem.restaurantId || newItem.price <= 0) return;
-
-    const id = `item${menuItems.length + 1}`;
-    setMenuItems([...menuItems, { ...newItem, id }]);
-
-    // Reset form
-    setNewItem({
-      name: "",
-      price: 0,
-      description: "",
-      image: "/placeholder.svg?height=100&width=100",
-      restaurantId: "",
-      category: "",
-    });
+  const generateMenuId = () => {
+    return `MENU_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
   };
 
-  const handleUpdateItem = () => {
+  const handleAddItem = async () => {
+    if (!newItem.name || !newItem.restaurant_id || newItem.price <= 0) return;
+
+    setIsLoading(true);
+    try {
+      const base64 = (newItem.image ?? "").split(",")[1] || "";
+      const binary = atob(base64);
+      const byteArray = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        byteArray[i] = binary.charCodeAt(i);
+      }
+
+      await invoke("create_menu", {
+        payload: {
+          menu_id: generateMenuId(),
+          restaurant_id: newItem.restaurant_id,
+          name: newItem.name,
+          description: newItem.description,
+          price: newItem.price,
+          available_quantity: newItem.available_quantity,
+          image: Array.from(byteArray),
+        },
+      });
+
+      await fetchMenuItems();
+
+      setNewItem({
+        name: "",
+        price: 0,
+        description: "",
+        image: "",
+        restaurant_id: "",
+        available_quantity: 0,
+      });
+      setImagePreview(null);
+    } catch (error) {
+      console.error("Error adding menu item:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateItem = async () => {
     if (!editItem) return;
 
-    const updatedItems = menuItems.map((item) =>
-      item.id === editItem.id ? editItem : item
-    );
+    setIsLoading(true);
+    try {
+      const base64 = (editItem.image ?? "").split(",")[1] || "";
+      const binary = atob(base64);
+      const byteArray = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        byteArray[i] = binary.charCodeAt(i);
+      }
 
-    setMenuItems(updatedItems);
-    setEditItem(null);
+      await invoke("update_menu", {
+        payload: {
+          menu_id: editItem.menu_id,
+          restaurant_id: editItem.restaurant_id,
+          name: editItem.name,
+          description: editItem.description,
+          price: editItem.price,
+          available_quantity: editItem.available_quantity,
+          image: Array.from(byteArray),
+        },
+      });
+
+      await fetchMenuItems();
+
+      setEditItem(null);
+    } catch (error) {
+      console.error("Error updating menu item:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDeleteItem = (id: string) => {
-    setMenuItems(menuItems.filter((item) => item.id !== id));
+  const handleDeleteItem = async (menu_id: string) => {
+    setIsLoading(true);
+    try {
+      await invoke("delete_menu", {
+        payload: {
+          menu_id: menu_id,
+        },
+      });
+
+      await fetchMenuItems();
+    } catch (error) {
+      console.error("Error deleting menu item:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const filteredItems = selectedRestaurant
-    ? menuItems.filter((item) => item.restaurantId === selectedRestaurant)
-    : menuItems;
+  const fetchMenuItems = async () => {
+    try {
+      const response = await invoke("view_all_menus");
+      // @ts-ignore
+      if (response.data) {
+        // @ts-ignore
+        setMenuItems(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching menu items:", error);
+    }
+  };
 
-  const categories = [
-    "Appetizer",
-    "Main Course",
-    "Side Dish",
-    "Dessert",
-    "Beverage",
-  ];
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const imageUrl = reader.result as string;
+        setImagePreview(imageUrl);
+        setNewItem((prev) => ({ ...prev, image: imageUrl }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const filteredItems =
+    selectedRestaurant === "all"
+      ? menuItems
+      : menuItems.filter((item) => item.restaurant_id === selectedRestaurant);
 
   return (
     <div className="space-y-6">
@@ -192,9 +236,12 @@ export function MenuManagement() {
                     <SelectValue placeholder="All Restaurants" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Restaurants</SelectItem>
+                    <SelectItem value="all">All Restaurants</SelectItem>{" "}
                     {restaurants.map((restaurant) => (
-                      <SelectItem key={restaurant.id} value={restaurant.id}>
+                      <SelectItem
+                        key={restaurant.restaurant_id}
+                        value={restaurant.restaurant_id}
+                      >
                         {restaurant.name}
                       </SelectItem>
                     ))}
@@ -209,31 +256,35 @@ export function MenuManagement() {
                       <TableHead>Image</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Price</TableHead>
-                      <TableHead>Category</TableHead>
+                      <TableHead>Quantity</TableHead>
                       <TableHead>Restaurant</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredItems.length > 0 ? (
-                      filteredItems.map((item) => (
-                        <TableRow key={item.id}>
+                    {menuItems.length > 0 ? (
+                      filteredItems.map((menu) => (
+                        <TableRow key={menu.menu_id}>
                           <TableCell>
                             <div className="relative h-10 w-10 rounded-md overflow-hidden">
                               <img
-                                src={item.image || "/placeholder.svg"}
-                                alt={item.name}
+                                src={
+                                  menu.image
+                                    ? `data:image/png;base64,${menu.image}`
+                                    : "/placeholder.svg?height=100&width=100"
+                                }
+                                alt={menu.name}
                                 className="object-cover"
                               />
                             </div>
                           </TableCell>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>${item.price.toFixed(2)}</TableCell>
-                          <TableCell>{item.category}</TableCell>
+                          <TableCell>{menu.name}</TableCell>
+                          <TableCell>${menu.price.toFixed(2)}</TableCell>
+                          <TableCell>{menu.available_quantity}</TableCell>
                           <TableCell>
                             {
                               restaurants.find(
-                                (r) => r.id === item.restaurantId
+                                (r) => r.restaurant_id === menu.restaurant_id
                               )?.name
                             }
                           </TableCell>
@@ -244,7 +295,7 @@ export function MenuManagement() {
                                   <Button
                                     variant="outline"
                                     size="icon"
-                                    onClick={() => setEditItem(item)}
+                                    onClick={() => setEditItem(menu)}
                                   >
                                     <Pencil className="h-4 w-4" />
                                   </Button>
@@ -307,43 +358,34 @@ export function MenuManagement() {
                                         />
                                       </div>
                                       <div className="grid gap-2">
-                                        <Label htmlFor="edit-category">
-                                          Category
+                                        <Label htmlFor="edit-quantity">
+                                          Available Quantity
                                         </Label>
-                                        <Select
-                                          value={editItem.category}
-                                          onValueChange={(value) =>
+                                        <Input
+                                          id="edit-quantity"
+                                          type="number"
+                                          min="0"
+                                          value={editItem.available_quantity}
+                                          onChange={(e) =>
                                             setEditItem({
                                               ...editItem,
-                                              category: value,
+                                              available_quantity: parseInt(
+                                                e.target.value
+                                              ),
                                             })
                                           }
-                                        >
-                                          <SelectTrigger id="edit-category">
-                                            <SelectValue placeholder="Select category" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {categories.map((category) => (
-                                              <SelectItem
-                                                key={category}
-                                                value={category}
-                                              >
-                                                {category}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
+                                        />
                                       </div>
                                       <div className="grid gap-2">
                                         <Label htmlFor="edit-restaurant">
                                           Restaurant
                                         </Label>
                                         <Select
-                                          value={editItem.restaurantId}
+                                          value={editItem.restaurant_id}
                                           onValueChange={(value) =>
                                             setEditItem({
                                               ...editItem,
-                                              restaurantId: value,
+                                              restaurant_id: value,
                                             })
                                           }
                                         >
@@ -353,14 +395,78 @@ export function MenuManagement() {
                                           <SelectContent>
                                             {restaurants.map((restaurant) => (
                                               <SelectItem
-                                                key={restaurant.id}
-                                                value={restaurant.id}
+                                                key={restaurant.restaurant_id}
+                                                value={restaurant.restaurant_id}
                                               >
                                                 {restaurant.name}
                                               </SelectItem>
                                             ))}
                                           </SelectContent>
                                         </Select>
+                                      </div>
+                                      <div className="grid gap-2">
+                                        <Label>Image Preview</Label>
+                                        <div className="space-y-2">
+                                          <Label htmlFor="edit-image">
+                                            Menu Image
+                                          </Label>
+                                          <div className="flex items-center gap-4">
+                                            <div className="relative h-32 w-32 rounded-md border border-input bg-muted flex items-center justify-center overflow-hidden">
+                                              {editItem.image ? (
+                                                <img
+                                                  src={
+                                                    editItem.image ||
+                                                    "/placeholder.svg"
+                                                  }
+                                                  alt="Concept preview"
+                                                  className="h-full w-full object-cover"
+                                                />
+                                              ) : (
+                                                <Camera className="h-8 w-8 text-muted-foreground" />
+                                              )}
+                                            </div>
+                                            <div className="flex-1">
+                                              <Input
+                                                id="edit-image"
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                  const file =
+                                                    e.target.files?.[0];
+                                                  if (file) {
+                                                    const reader =
+                                                      new FileReader();
+                                                    reader.onloadend = () => {
+                                                      const imageUrl =
+                                                        reader.result as string;
+                                                      setEditItem((prev) => ({
+                                                        ...prev!,
+                                                        image: imageUrl,
+                                                      }));
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                  }
+                                                }}
+                                                className="hidden"
+                                              />
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() =>
+                                                  document
+                                                    .getElementById(
+                                                      "edit-image"
+                                                    )
+                                                    ?.click()
+                                                }
+                                                className="w-full"
+                                              >
+                                                <Upload className="mr-2 h-4 w-4" />
+                                                Upload Image
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
                                   )}
@@ -371,8 +477,11 @@ export function MenuManagement() {
                                     >
                                       Cancel
                                     </Button>
-                                    <Button onClick={handleUpdateItem}>
-                                      Save Changes
+                                    <Button
+                                      onClick={handleUpdateItem}
+                                      disabled={isLoading}
+                                    >
+                                      {isLoading ? "Saving..." : "Save Changes"}
                                     </Button>
                                   </DialogFooter>
                                 </DialogContent>
@@ -381,7 +490,8 @@ export function MenuManagement() {
                               <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => handleDeleteItem(item.id)}
+                                onClick={() => handleDeleteItem(menu.menu_id)}
+                                disabled={isLoading}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -457,31 +567,29 @@ export function MenuManagement() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="item-category">Category</Label>
-                        <Select
-                          value={newItem.category}
-                          onValueChange={(value) =>
-                            setNewItem({ ...newItem, category: value })
+                        <Label htmlFor="item-quantity">
+                          Available Quantity
+                        </Label>
+                        <Input
+                          id="item-quantity"
+                          type="number"
+                          min="0"
+                          value={newItem.available_quantity || ""}
+                          onChange={(e) =>
+                            setNewItem({
+                              ...newItem,
+                              available_quantity: parseInt(e.target.value) || 0,
+                            })
                           }
-                        >
-                          <SelectTrigger id="item-category">
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="0"
+                        />
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="item-restaurant">Restaurant</Label>
                         <Select
-                          value={newItem.restaurantId}
+                          value={newItem.restaurant_id}
                           onValueChange={(value) =>
-                            setNewItem({ ...newItem, restaurantId: value })
+                            setNewItem({ ...newItem, restaurant_id: value })
                           }
                         >
                           <SelectTrigger id="item-restaurant">
@@ -490,8 +598,8 @@ export function MenuManagement() {
                           <SelectContent>
                             {restaurants.map((restaurant) => (
                               <SelectItem
-                                key={restaurant.id}
-                                value={restaurant.id}
+                                key={restaurant.restaurant_id}
+                                value={restaurant.restaurant_id}
                               >
                                 {restaurant.name}
                               </SelectItem>
@@ -502,29 +610,55 @@ export function MenuManagement() {
                     </div>
                     <div className="grid gap-2">
                       <Label>Image Preview</Label>
-                      <div className="relative h-40 w-full rounded-md overflow-hidden border">
-                        <img
-                          src={newItem.image || "/placeholder.svg"}
-                          alt="New Menu Item"
-                          className="object-cover"
-                        />
+                      <div className="space-y-2">
+                        <Label htmlFor="image">Menu Image</Label>
+                        <div className="flex items-center gap-4">
+                          <div className="relative h-32 w-32 rounded-md border border-input bg-muted flex items-center justify-center overflow-hidden">
+                            {imagePreview ? (
+                              <img
+                                src={imagePreview || "/placeholder.svg"}
+                                alt="Concept preview"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <Camera className="h-8 w-8 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              id="image"
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageChange}
+                              className="hidden"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() =>
+                                document.getElementById("image")?.click()
+                              }
+                              className="w-full"
+                            >
+                              <Upload className="mr-2 h-4 w-4" />
+                              Upload Image
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        In a real application, you would be able to upload an
-                        image here.
-                      </p>
                     </div>
                     <Button
                       onClick={handleAddItem}
                       disabled={
                         !newItem.name ||
-                        !newItem.restaurantId ||
-                        newItem.price <= 0
+                        !newItem.restaurant_id ||
+                        newItem.price <= 0 ||
+                        isLoading
                       }
                       className="mt-2"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Menu Item
+                      {isLoading ? "Adding..." : "Add Menu Item"}
                     </Button>
                   </div>
                 </CardContent>

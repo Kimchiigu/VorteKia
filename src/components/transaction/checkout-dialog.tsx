@@ -9,6 +9,8 @@ import {
 import { ShoppingBag, Check } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/button";
+import { useAuth } from "../provider/auth-provider";
+import { invoke } from "@tauri-apps/api/core";
 
 interface CheckoutDialogProps {
   totalItems: number;
@@ -18,6 +20,7 @@ interface CheckoutDialogProps {
   balance: number;
   checkoutDialogOpen: boolean;
   setCheckoutDialogOpen: (open: boolean) => void;
+  orders: Order[];
 }
 
 export default function CheckoutDialog({
@@ -28,14 +31,34 @@ export default function CheckoutDialog({
   balance,
   checkoutDialogOpen,
   setCheckoutDialogOpen,
+  orders,
 }: CheckoutDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const { user } = useAuth();
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     setIsProcessing(true);
 
-    setTimeout(() => {
+    try {
+      const unpaidOrders = orders.filter((order) => !order.is_paid);
+
+      for (const order of unpaidOrders) {
+        await invoke("checkout_order", {
+          payload: {
+            order_id: order.order_id,
+            is_paid: true,
+          },
+        });
+      }
+
+      await invoke("top_up_balance", {
+        payload: {
+          user_id: user?.user_id,
+          amount: -total,
+        },
+      });
+
       setIsProcessing(false);
       setIsComplete(true);
 
@@ -43,7 +66,10 @@ export default function CheckoutDialog({
         setCheckoutDialogOpen(false);
         setIsComplete(false);
       }, 2000);
-    }, 1500);
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      setIsProcessing(false);
+    }
   };
 
   return (

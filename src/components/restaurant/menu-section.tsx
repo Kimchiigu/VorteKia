@@ -11,7 +11,8 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Minus, Plus, Check, ShoppingBag } from "lucide-react";
+import { Input } from "@/components/ui/input"; // Add this import
+import { Minus, Plus, Check, ShoppingBag, Search } from "lucide-react"; // Add Search icon
 import SkeletonLoading from "../loader/skeleton";
 import { useAuth } from "@/components/provider/auth-provider";
 import {
@@ -33,9 +34,21 @@ interface CreateOrderPayload {
   is_paid: boolean;
 }
 
+interface Menu {
+  menu_id: string;
+  restaurant_id: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  available_quantity: number;
+}
+
 export default function MenuSection() {
   const { restaurant_id } = useParams<{ restaurant_id: string }>();
   const [menus, setMenus] = useState<Menu[]>([]);
+  const [filteredMenus, setFilteredMenus] = useState<Menu[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -53,11 +66,11 @@ export default function MenuSection() {
         const response = await invoke<{ data: Menu[] }>("view_all_menus");
 
         if (response && response.data) {
-          setMenus(
-            response.data.filter(
-              (menu) => menu.restaurant_id.toString() === restaurant_id
-            )
+          const restaurantMenus = response.data.filter(
+            (menu) => menu.restaurant_id.toString() === restaurant_id
           );
+          setMenus(restaurantMenus);
+          setFilteredMenus(restaurantMenus);
         } else {
           console.error("Invalid response format:", response);
         }
@@ -72,6 +85,15 @@ export default function MenuSection() {
       fetchMenus();
     }
   }, [restaurant_id]);
+
+  useEffect(() => {
+    const filtered = menus.filter(
+      (menu) =>
+        menu.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        menu.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredMenus(filtered);
+  }, [searchTerm, menus]);
 
   const handleAddToCart = (menu: Menu) => {
     setSelectedMenu(menu);
@@ -88,8 +110,15 @@ export default function MenuSection() {
     if (!selectedMenu) return;
 
     try {
-      const orderId = `order_${Date.now()}`;
+      const orderId = `ORD_${Date.now()}`;
       console.log("Creating order...");
+
+      await invoke("update_menu_quantity", {
+        payload: {
+          menu_id: selectedMenu.menu_id,
+          quantity: selectedMenu.available_quantity - quantity,
+        },
+      });
 
       await invoke("create_order", {
         payload: {
@@ -98,6 +127,7 @@ export default function MenuSection() {
           item_type: "restaurant",
           item_id: selectedMenu.menu_id,
           quantity: quantity,
+          date: new Date().toISOString(),
           is_paid: false,
         } as CreateOrderPayload,
       });
@@ -120,6 +150,20 @@ export default function MenuSection() {
     <section id="souvenirs" className="scroll-mt-16">
       <BackHeader pageType="restaurant" />
 
+      {/* Add Search Bar */}
+      <div className="mb-6 flex items-center gap-2">
+        <div className="relative w-full max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search menus..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array(6)
@@ -128,9 +172,15 @@ export default function MenuSection() {
               <SkeletonLoading key={index} />
             ))}
         </div>
+      ) : filteredMenus.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">
+            No menus found matching your search.
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {menus.map((menu) => (
+          {filteredMenus.map((menu) => (
             <Card key={menu.menu_id} className="overflow-hidden">
               <div className="aspect-video w-full overflow-hidden rounded-t-lg">
                 <img
@@ -172,6 +222,7 @@ export default function MenuSection() {
         </div>
       )}
 
+      {/* Rest of your dialog components remain the same */}
       <Dialog open={isQuantityModalOpen} onOpenChange={setIsQuantityModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

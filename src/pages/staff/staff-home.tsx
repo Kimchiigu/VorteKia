@@ -36,7 +36,7 @@ export default function StaffHome() {
               {user.role === "Lost And Found Staff" && <LostAndFound />}
               {user.role === "Ride Manager" && <RideManager staffId={user.user_id} />}
               {user.role === "Ride Staff" && <RideStaff staffId={user.user_id} />}
-              {user.role === "F&B Supervisor" && <FNBSupervisor />}
+              {user.role === "F&B Supervisor" && <FNBSupervisor staffId={user.user_id} />}
               {user.role === "Chef" && <Chef />}
               {user.role === "Waiter" && <Waiter />}
               {user.role === "Maintenance Manager" && <MaintenanceManager staffId={user.user_id} />}

@@ -13,13 +13,13 @@ use tokio::task::JoinHandle;
 
 use controllers::restaurant_handler::{view_all_restaurants, create_restaurant, delete_restaurant, update_restaurant};
 use controllers::ride_handler::{view_all_rides, view_ride, create_ride, update_ride, delete_ride};
-use controllers::menu_handler::{view_all_menus, view_menu, create_menu, update_menu, delete_menu};
+use controllers::menu_handler::{update_menu_quantity, view_all_menus, view_menu, create_menu, update_menu, delete_menu};
 use controllers::queue_handler::{view_all_queues, create_queue, edit_queue, delete_queue, get_queues_by_ride};
 use controllers::user_handler::{get_all_users, get_all_ride_staff, get_all_users_lite, get_user_lite_by_id, login_user, staff_login, get_balance, top_up_balance, get_notifications, create_customer};
 use controllers::notification_handler::{view_notification, mark_all_notifications_read, send_notification};
 use controllers::store_handler::{view_all_stores, create_store, update_store, delete_store};
 use controllers::souvenir_handler::{view_all_souvenirs, view_souvenir};
-use controllers::order_handler::{view_all_orders, view_orders, create_order, update_order, delete_order};
+use controllers::order_handler::{checkout_order, view_all_orders, view_orders, create_order, update_order, delete_order};
 use controllers::lost_and_found_handler::{view_lost_and_found_items, create_lost_item, update_lost_item, delete_lost_item};
 use controllers::chat_handler::{send_group_message, fetch_group_info, get_all_groups, listen_to_group_chat, fetch_group_chat_messages};
 use controllers::official_chat_handler::{fetch_official_chat_customers, fetch_official_chat_messages, send_official_chat_message, listen_to_official_chat};
@@ -28,6 +28,7 @@ use controllers::broadcast_handler::send_broadcast_message;
 use controllers::ride_manager_handler::{assign_ride_staff, create_maintenance_request};
 use controllers::proposal_handler::{create_proposal, view_all_proposal};
 use controllers::maintenance_handler::view_all_maintenance;
+use controllers::fnb_supervisor_handler::assign_restaurant_staff;
 
 pub struct AppState {
     pub db: DatabaseConnection,
@@ -253,6 +254,9 @@ pub async fn run() {
             listen_to_maintenance_chat,
             fetch_maintenance_chat_messages,
             send_maintenance_chat_message,
+            assign_restaurant_staff,
+            checkout_order,
+            update_menu_quantity,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

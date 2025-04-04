@@ -58,7 +58,6 @@ export function RideProposal({
   );
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // Form state for new proposal - removed type as it will be set by backend
   const [formData, setFormData] = useState<
     Omit<RideProposal, "id" | "status" | "submittedDate" | "feedback" | "type">
   >({

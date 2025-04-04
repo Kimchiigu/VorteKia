@@ -1,12 +1,10 @@
 use anyhow::Result;
 use entity::restaurant::{self, ActiveModel as RestaurantActiveModel, Entity as Restaurant};
 use sea_orm::{ActiveModelTrait, EntityTrait, QueryOrder, ActiveValue::Set};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::State;
 use crate::{ApiResponse, cache_get, cache_set, cache_delete, AppState};
-
 use base64::encode;
-use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct RestaurantResponse {
@@ -16,6 +14,8 @@ pub struct RestaurantResponse {
     cuisine_type: String,
     image: String,
     location: String,
+    required_waiter: i32,
+    required_chef: i32,
     operational_status: String,
     operational_start_hours: String,
     operational_end_hours: String,
@@ -28,6 +28,8 @@ struct RestaurantCache {
     description: String,
     cuisine_type: String,
     location: String,
+    required_waiter: i32,
+    required_chef: i32,
     operational_status: String,
     operational_start_hours: String,
     operational_end_hours: String,
@@ -51,6 +53,8 @@ pub async fn view_all_restaurants(
                     cuisine_type: cache.cuisine_type,
                     image: encode(&model.image),
                     location: cache.location,
+                    required_waiter: cache.required_waiter,
+                    required_chef: cache.required_chef,
                     operational_status: cache.operational_status,
                     operational_start_hours: cache.operational_start_hours,
                     operational_end_hours: cache.operational_end_hours,
@@ -76,6 +80,8 @@ pub async fn view_all_restaurants(
                     cuisine_type: r.cuisine_type.clone(),
                     image: encode(&r.image),
                     location: r.location.clone(),
+                    required_waiter: r.required_waiter,
+                    required_chef: r.required_chef,
                     operational_status: r.operational_status.clone(),
                     operational_start_hours: r.operational_start_hours.clone(),
                     operational_end_hours: r.operational_end_hours.clone(),
@@ -90,6 +96,8 @@ pub async fn view_all_restaurants(
                     description: r.description,
                     cuisine_type: r.cuisine_type,
                     location: r.location,
+                    required_waiter: r.required_waiter,
+                    required_chef: r.required_chef,
                     operational_status: r.operational_status,
                     operational_start_hours: r.operational_start_hours,
                     operational_end_hours: r.operational_end_hours,
@@ -107,12 +115,17 @@ pub async fn view_all_restaurants(
     }
 }
 
+// Struktur CreateRestaurantRequest dengan atribut baru
 #[derive(Deserialize)]
 pub struct CreateRestaurantRequest {
     restaurant_id: String,
     name: String,
+    description: String,
+    cuisine_type: String,
     image: Vec<u8>,
     location: String,
+    required_waiter: i32,
+    required_chef: i32,
     operational_status: String,
     operational_start_hours: String,
     operational_end_hours: String,
@@ -126,8 +139,12 @@ pub async fn create_restaurant(
     let new_restaurant = RestaurantActiveModel {
         restaurant_id: Set(payload.restaurant_id),
         name: Set(payload.name),
+        description: Set(payload.description),
+        cuisine_type: Set(payload.cuisine_type),
         image: Set(payload.image),
         location: Set(payload.location),
+        required_waiter: Set(payload.required_waiter),
+        required_chef: Set(payload.required_chef),
         operational_status: Set(payload.operational_status),
         operational_start_hours: Set(payload.operational_start_hours),
         operational_end_hours: Set(payload.operational_end_hours),
@@ -143,6 +160,7 @@ pub async fn create_restaurant(
     }
 }
 
+// Struktur DeleteRestaurantRequest tidak perlu diubah
 #[derive(Deserialize)]
 pub struct DeleteRestaurantRequest {
     restaurant_id: String,
@@ -165,12 +183,17 @@ pub async fn delete_restaurant(
     }
 }
 
+// Struktur UpdateRestaurantRequest dengan atribut baru
 #[derive(Deserialize)]
 pub struct UpdateRestaurantRequest {
     restaurant_id: String,
     name: String,
+    description: String,
+    cuisine_type: String,
     image: Vec<u8>,
     location: String,
+    required_waiter: i32,
+    required_chef: i32,
     operational_status: String,
     operational_start_hours: String,
     operational_end_hours: String,
@@ -185,8 +208,12 @@ pub async fn update_restaurant(
         Ok(Some(existing_restaurant)) => {
             let mut active_restaurant: RestaurantActiveModel = existing_restaurant.into();
             active_restaurant.name = Set(payload.name);
+            active_restaurant.description = Set(payload.description);
+            active_restaurant.cuisine_type = Set(payload.cuisine_type);
             active_restaurant.image = Set(payload.image);
             active_restaurant.location = Set(payload.location);
+            active_restaurant.required_waiter = Set(payload.required_waiter);
+            active_restaurant.required_chef = Set(payload.required_chef);
             active_restaurant.operational_status = Set(payload.operational_status);
             active_restaurant.operational_start_hours = Set(payload.operational_start_hours);
             active_restaurant.operational_end_hours = Set(payload.operational_end_hours);

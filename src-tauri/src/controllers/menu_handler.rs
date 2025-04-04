@@ -207,6 +207,35 @@ pub async fn update_menu(
 }
 
 #[derive(Deserialize)]
+pub struct UpdateMenuQuantityRequest {
+    pub menu_id: String,
+    pub available_quantity: i32,
+}
+
+#[tauri::command]
+pub async fn update_menu_quantity(
+    state: State<'_, AppState>,
+    payload: UpdateMenuQuantityRequest,
+) -> Result<ApiResponse<menu::Model>, String> {
+    match Menu::find_by_id(payload.menu_id.clone()).one(&state.db).await {
+        Ok(Some(existing_menu)) => {
+            let mut active_menu: MenuActiveModel = existing_menu.into();
+            active_menu.available_quantity = Set(payload.available_quantity);
+
+            match active_menu.update(&state.db).await {
+                Ok(updated_menu) => {
+                    cache_delete(&state.redis_pool, "get_all_menus_cache").await;
+                    Ok(ApiResponse::success(updated_menu))
+                }
+                Err(err) => Ok(ApiResponse::error(format!("Failed to update menu: {}", err))),
+            }
+        }
+        Ok(None) => Ok(ApiResponse::error(format!("No menu found with ID: {}", payload.menu_id))),
+        Err(err) => Ok(ApiResponse::error(format!("Database error while updating menu: {}", err))),
+    }
+}
+
+#[derive(Deserialize)]
 pub struct DeleteMenuRequest {
     pub menu_id: String,
 }
