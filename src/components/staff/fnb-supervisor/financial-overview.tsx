@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -86,30 +84,35 @@ export function FinancialOverview({
   const [sortBy, setSortBy] = useState<string>("income");
 
   useEffect(() => {
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date();
+    const todayDate = today.toISOString().split("T")[0];
 
-    console.log("Orders :", orders);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const yesterdayDate = yesterday.toISOString().split("T")[0];
 
-    // Ensure order dates are in the correct format for comparison
     orders.forEach((order) => {
-      order.date = order.date.split("T")[0]; // Extract only the date part (YYYY-MM-DD)
+      order.date = order.date.split("T")[0];
     });
 
     console.log("Updated Orders :", orders);
 
-    // Filter orders: today's date, item_type "restaurant", and is_paid true
-    const relevantOrders = orders.filter(
+    const todayOrders = orders.filter(
       (order) =>
-        order.date === today &&
+        order.date === todayDate &&
         order.item_type === "restaurant" &&
         order.is_paid
     );
 
-    // Create a map for quick menu lookup
+    const yesterdayOrders = orders.filter(
+      (order) =>
+        order.date === yesterdayDate &&
+        order.item_type === "restaurant" &&
+        order.is_paid
+    );
+
     const menuMap = new Map(menus.map((menu) => [menu.menu_id, menu]));
 
-    // Initialize restaurant data
     const restaurantData: {
       [key: string]: {
         totalIncome: number;
@@ -118,8 +121,7 @@ export function FinancialOverview({
       };
     } = {};
 
-    // Calculate revenue per restaurant
-    relevantOrders.forEach((order) => {
+    todayOrders.forEach((order) => {
       const menu = menuMap.get(order.item_id);
       if (menu) {
         const revenue = menu.price * order.quantity;
@@ -132,11 +134,21 @@ export function FinancialOverview({
         }
         restaurantData[menu.restaurant_id].totalIncome += revenue;
         restaurantData[menu.restaurant_id].mealsSold += order.quantity;
-        restaurantData[menu.restaurant_id].orderCount += 1; // Count unique orders
+        restaurantData[menu.restaurant_id].orderCount += 1;
       }
     });
 
-    // Build the RestaurantIncome array
+    const yesterdayData: { [key: string]: number } = {};
+    yesterdayOrders.forEach((order) => {
+      const menu = menuMap.get(order.item_id);
+      if (menu) {
+        if (!yesterdayData[menu.restaurant_id]) {
+          yesterdayData[menu.restaurant_id] = 0;
+        }
+        yesterdayData[menu.restaurant_id] += menu.price * order.quantity;
+      }
+    });
+
     const incomes: RestaurantIncome[] = restaurants.map((restaurant) => {
       const data = restaurantData[restaurant.restaurant_id] || {
         totalIncome: 0,
@@ -145,20 +157,25 @@ export function FinancialOverview({
       };
       const averageOrderValue =
         data.orderCount > 0 ? data.totalIncome / data.orderCount : 0;
+      const yesterdayIncome = yesterdayData[restaurant.restaurant_id] || 0;
+      const comparisonToYesterday =
+        yesterdayIncome > 0
+          ? ((data.totalIncome - yesterdayIncome) / yesterdayIncome) * 100
+          : 0;
+
       return {
         id: restaurant.restaurant_id,
         name: restaurant.name,
         totalIncome: data.totalIncome,
         mealsSold: data.mealsSold,
         averageOrderValue,
-        comparisonToYesterday: 0, // Placeholder, as yesterday's data isn’t provided
+        comparisonToYesterday,
       };
     });
 
     setRestaurantIncomes(incomes);
   }, [orders, menus, restaurants]);
 
-  // Calculate total metrics
   const totalDailyIncome = restaurantIncomes.reduce(
     (sum, restaurant) => sum + restaurant.totalIncome,
     0
@@ -170,7 +187,6 @@ export function FinancialOverview({
   const averageOrderValue =
     totalMealsSold > 0 ? totalDailyIncome / totalMealsSold : 0;
 
-  // Sort restaurants based on the selected criterion
   const sortedRestaurants = [...restaurantIncomes].sort((a, b) => {
     switch (sortBy) {
       case "income":

@@ -14,6 +14,7 @@ pub struct OrderResponse {
     pub quantity: i32,
     pub date: String,
     pub is_paid: bool,
+    pub status: Option<String>,
 }
 
 #[tauri::command]
@@ -42,6 +43,7 @@ pub async fn view_all_orders(
                     date: o.date.clone(),
                     quantity: o.quantity,
                     is_paid: o.is_paid,
+                    status: o.status.clone(),
                 })
                 .collect();
 
@@ -81,6 +83,7 @@ pub async fn view_orders(
                     date: o.date.clone(),
                     quantity: o.quantity,
                     is_paid: o.is_paid,
+                    status: o.status.clone(),
                 })
                 .collect();
 
@@ -107,6 +110,12 @@ pub async fn create_order(
     state: State<'_, AppState>,
     payload: CreateOrderRequest,
 ) -> Result<ApiResponse<order::Model>, String> {
+    let status = if payload.item_type == "restaurant" {
+        Some("Waiting for Cooking".to_string())
+    } else {
+        None
+    };
+
     let new_order = OrderActiveModel {
         order_id: Set(payload.order_id),
         customer_id: Set(payload.customer_id),
@@ -115,6 +124,7 @@ pub async fn create_order(
         date: Set(payload.date),
         quantity: Set(payload.quantity),
         is_paid: Set(payload.is_paid),
+        status: Set(status),
         ..Default::default()
     };
 
@@ -124,6 +134,36 @@ pub async fn create_order(
             Ok(ApiResponse::success(order))
         }
         Err(err) => Ok(ApiResponse::error(format!("Failed to create order: {}", err))),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct UpdateOrderStatusRequest {
+    pub order_id: String,
+    pub status: String,
+}
+
+#[tauri::command]
+pub async fn update_order_status(
+    state: State<'_, AppState>,
+    payload: UpdateOrderStatusRequest,
+) -> Result<ApiResponse<order::Model>, String> {
+    match Order::find_by_id(payload.order_id.clone()).one(&state.db).await {
+        Ok(Some(existing_order)) => {
+            let mut active_order: OrderActiveModel = existing_order.into();
+
+            active_order.status = Set(Some(payload.status));
+
+            match active_order.update(&state.db).await {
+                Ok(updated_order) => {
+                    cache_delete(&state.redis_pool, "get_all_orders_cache").await;
+                    Ok(ApiResponse::success(updated_order))
+                }
+                Err(err) => Ok(ApiResponse::error(format!("Failed to update order: {}", err))),
+            }
+        }
+        Ok(None) => Ok(ApiResponse::error(format!("No order found with ID: {}", payload.order_id))),
+        Err(err) => Ok(ApiResponse::error(format!("Database error while updating order: {}", err))),
     }
 }
 

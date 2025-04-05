@@ -116,7 +116,7 @@ export default function MenuSection() {
       await invoke("update_menu_quantity", {
         payload: {
           menu_id: selectedMenu.menu_id,
-          quantity: selectedMenu.available_quantity - quantity,
+          available_quantity: selectedMenu.available_quantity - quantity,
         },
       });
 

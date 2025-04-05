@@ -18,6 +18,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Order::Quantity).integer().not_null())
                     .col(ColumnDef::new(Order::Date).string().not_null())
                     .col(ColumnDef::new(Order::IsPaid).boolean().not_null())
+                    .col(ColumnDef::new(Order::Status).string().null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_order_user")
@@ -50,6 +51,7 @@ enum Order {
     Date,
     Quantity,
     IsPaid,
+    Status,
 }
 
 #[derive(Iden)]

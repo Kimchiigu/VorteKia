@@ -19,12 +19,19 @@ interface MenuItem {
   available_quantity: number;
 }
 
-export default function Chef() {
+interface ChefProps {
+  staffId: string;
+}
+
+export default function Chef({ staffId }: ChefProps) {
   const [activeTab, setActiveTab] = useState("orders");
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [staffRestaurantId, setStaffRestaurantId] = useState<string | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,14 +43,15 @@ export default function Chef() {
           usersResponse,
           menusResponse,
           ordersResponse,
+          staffResponse,
         ] = await Promise.all([
           invoke<ApiResponse<Restaurant[]>>("view_all_restaurants"),
           invoke<ApiResponse<User[]>>("get_all_users"),
           invoke<ApiResponse<MenuItem[]>>("view_all_menus"),
           invoke<ApiResponse<Order[]>>("view_all_orders"),
+          invoke<ApiResponse<User>>("get_user_by_id", { userId: staffId }),
         ]);
 
-        // Cek apakah response sukses dan ambil data
         if (restaurantsResponse) setRestaurants(restaurantsResponse.data);
         else
           throw new Error(
@@ -59,6 +67,12 @@ export default function Chef() {
         if (ordersResponse) setOrders(ordersResponse.data);
         else throw new Error(ordersResponse.error || "Failed to fetch orders");
 
+        if (staffResponse) {
+          setStaffRestaurantId(staffResponse.data.restaurant_id);
+        } else {
+          throw new Error(staffResponse.error || "Failed to fetch staff data");
+        }
+
         setLoading(false);
       } catch (err) {
         setError(`Error: ${err}`);
@@ -67,15 +81,28 @@ export default function Chef() {
     };
 
     fetchData();
-  }, []);
+  }, [staffId]);
+
+  const filteredOrders = orders.filter((order) => {
+    const menu = menus.find((menu) => menu.menu_id === order.item_id);
+    return menu?.restaurant_id === staffRestaurantId;
+  });
 
   const handleUpdateStatus = (orderId: string, newStatus: OrderStatus) => {
     setOrders((prevOrders) =>
       prevOrders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
+        order.order_id === orderId ? { ...order, status: newStatus } : order
       )
     );
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
 
   return (
     <main className="min-h-screen w-full bg-background">
@@ -88,14 +115,20 @@ export default function Chef() {
           <TabsContent value="orders" className="mt-6">
             <h2 className="text-2xl font-bold mb-4">Manage Orders</h2>
             <RestaurantOrder
-              orders={orders}
+              orders={filteredOrders}
+              menus={menus}
               userRole="chef"
               onUpdateStatus={handleUpdateStatus}
             />
           </TabsContent>
           <TabsContent value="restaurant" className="mt-6">
             <h2 className="text-2xl font-bold mb-4">Restaurant Information</h2>
-            <RestaurantDetail restaurant={restaurants} />
+            <RestaurantDetail
+              restaurant={restaurants.find(
+                (r) => r.restaurant_id === staffRestaurantId
+              )}
+              users={users}
+            />
           </TabsContent>
         </Tabs>
       </div>

@@ -14,6 +14,7 @@ pub struct Model {
     pub quantity: i32,
     pub date: String,
     pub is_paid: bool,
+    pub status: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

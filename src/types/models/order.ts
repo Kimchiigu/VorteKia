@@ -6,4 +6,5 @@ interface Order {
   date: string;
   quantity: number;
   is_paid: boolean;
+  status?: string;
 }

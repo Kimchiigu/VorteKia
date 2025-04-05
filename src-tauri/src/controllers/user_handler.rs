@@ -268,6 +268,46 @@ pub async fn get_all_ride_staff(
 }
 
 #[tauri::command]
+pub async fn get_user_by_id(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<ApiResponse<UserResponse>, String> {
+    let cache_key = format!("user_by_{}", user_id);
+
+    if let Some(cached_user) = cache_get::<user::Model>(&state.redis_pool, &cache_key).await {
+        return Ok(ApiResponse::success(UserResponse {
+            user_id: cached_user.user_id,
+            name: cached_user.name,
+            role: cached_user.role,
+            email: cached_user.email,
+            balance: cached_user.balance,
+            restaurant_id: cached_user.restaurant_id,
+        }));
+    }
+
+    match User::find()
+        .filter(user::Column::UserId.eq(user_id.clone()))
+        .one(&state.db)
+        .await
+    {
+        Ok(Some(user)) => {
+            let response = UserResponse {
+                user_id: user.user_id.clone(),
+                name: user.name.clone(),
+                role: user.role.clone(),
+                email: user.email.clone(),
+                balance: user.balance,
+                restaurant_id: user.restaurant_id.clone(),
+            };
+            cache_set(&state.redis_pool, &cache_key, &user, 3600).await;
+            Ok(ApiResponse::success(response))
+        }
+        Ok(None) => Ok(ApiResponse::error("User not found".into())),
+        Err(err) => Ok(ApiResponse::error(format!("Database error: {}", err))),
+    }
+}
+
+#[tauri::command]
 pub async fn get_user_lite_by_id(
     state: State<'_, AppState>,
     user_id: String,

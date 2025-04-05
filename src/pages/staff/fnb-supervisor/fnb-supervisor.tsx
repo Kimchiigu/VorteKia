@@ -55,6 +55,7 @@ interface Order {
   item_id: string;
   quantity: number;
   is_paid: boolean;
+  date: string;
 }
 
 // Interface untuk ApiResponse dari backend
@@ -141,10 +142,11 @@ export default function FNBSupervisor({ staffId }: FNBSupervisorProps) {
   const chefs = staff.filter((u) => u.role === "Chef").length;
   const waiters = staff.filter((u) => u.role === "Waiter").length;
   const totalMenuItems = menus.length;
+  const today = new Date().toISOString().split("T")[0];
 
   // Hitung revenue (quantity * price untuk item_type "restaurant" yang sudah dibayar)
   const paidRestaurantOrders = orders.filter(
-    (o) => o.is_paid && o.item_type === "restaurant"
+    (o) => o.is_paid && o.item_type === "restaurant" && o.date.split("T")[0] === today
   );
   const revenue = paidRestaurantOrders.reduce((sum, order) => {
     const menuItem = menus.find((m) => m.menu_id === order.item_id);
